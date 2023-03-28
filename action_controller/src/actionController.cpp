@@ -5,6 +5,9 @@
 #include <trajectory_msgs/MultiDOFJointTrajectory.h>
 #include <action_controller/MultiDofFollowJointTrajectoryAction.h>
 #include <geometry_msgs/Twist.h>
+#include <mav_msgs/CommandTrajectory.h>
+#include <tf/transform_broadcaster.h>
+#include <tf/transform_datatypes.h>
 
 class Controller{
 private:
@@ -19,39 +22,53 @@ public:
 				false),
 				has_active_goal_(false)
 {
-		creato=0;
+		created=0;
 		empty.linear.x=0;
 		empty.linear.y=0;
 		empty.linear.z=0;
 		empty.angular.z=0;
 		empty.angular.y=0;
 		empty.angular.x=0;
-		pub_topic = node_.advertise<geometry_msgs::Twist>("cmd_vel", 1);
+		pub_topic = node_.advertise<geometry_msgs::Twist>("/cmd_vel", 10);
+		trajectory_pub = node_.advertise<mav_msgs::CommandTrajectory>("/cmd_3dnav", 10);
 		action_server_.start();
-		ROS_INFO_STREAM("Node ready!");
+		printf("\n\n Node ready! \n\n");
 }
 private:
 	ros::NodeHandle node_;
 	ActionServer action_server_;
 	ros::Publisher pub_topic;
+
+	ros::Publisher trajectory_pub;
+  	mav_msgs::CommandTrajectory desired_wp;
+  
+  	tf::Quaternion q;
+  	double des_roll, des_pitch, des_yaw;
+
 	geometry_msgs::Twist empty;
 	geometry_msgs::Transform_<std::allocator<void> > lastPosition;
+	ros::Duration lastTime;
+	ros::Duration currentTime;
+	double dt;
 	geometry_msgs::Twist cmd;
 	pthread_t trajectoryExecutor;
-	int creato;
+	int created;
 
 	bool has_active_goal_;
 	GoalHandle active_goal_;
 	trajectory_msgs::MultiDOFJointTrajectory_<std::allocator<void> > toExecute;
 
+  	double current_time; 
+  	double start_time; 
+
 	void cancelCB(GoalHandle gh){
 		if (active_goal_ == gh)
 		{
 			// Stops the controller.
-			if(creato){
-				ROS_INFO_STREAM("Stop thread");
+			if(created){
+				printf("Stop thread \n");
 				pthread_cancel(trajectoryExecutor);
-				creato=0;
+				created=0;
 			}
 			pub_topic.publish(empty);
 
@@ -65,9 +82,9 @@ private:
 		if (has_active_goal_)
 		{
 			// Stops the controller.
-			if(creato){
+			if(created){
 				pthread_cancel(trajectoryExecutor);
-				creato=0;
+				created=0;
 			}
 			pub_topic.publish(empty);
 
@@ -83,10 +100,10 @@ private:
 
 		//controllore solo per il giunto virtuale Base
 		if(pthread_create(&trajectoryExecutor, NULL, threadWrapper, this)==0){
-			creato=1;
-			ROS_INFO_STREAM("Thread for trajectory execution created");
+			created=1;
+			printf("Thread for trajectory execution created \n");
 		} else {
-			ROS_INFO_STREAM("Thread creation failed!");
+			printf("Thread creation failed! \n");
 		}
 
 	}
@@ -98,15 +115,49 @@ private:
 	}
 
 	void executeTrajectory(){
-		if(toExecute.joint_names[0]=="Base" && toExecute.points.size()>0){
+		if(toExecute.joint_names[0]=="virtual_joint" && toExecute.points.size()>0){
 			for(int k=0; k<toExecute.points.size(); k++){
-				//ricavo cmd da effettuare
+
+				geometry_msgs::Transform_<std::allocator<void> > point=toExecute.points[k].transforms[0];
+
+				desired_wp.position.x = point.translation.x;
+  				desired_wp.position.y = point.translation.y;
+  				desired_wp.position.z = point.translation.z;
+
+				//Convert quaternion to Euler angles
+  				tf:quaternionMsgToTF(point.rotation, q);
+  				tf::Matrix3x3(q).getRPY(des_roll, des_pitch, des_yaw);
+  				desired_wp.yaw = des_yaw;
+
+				desired_wp.jerk.x = 1;
+
+				if(k==0){
+					start_time = ros::Time::now().toSec();
+					current_time = ros::Time::now().toSec();
+
+					desired_wp.header.stamp = ros::Time::now();
+        				desired_wp.header.frame_id = "3dnav_action_frame";
+					trajectory_pub.publish(desired_wp);
+				}
+				else{
+
+					while( (current_time-start_time) < toExecute.points[k].time_from_start.toSec() ){
+					current_time = ros::Time::now().toSec();
+					}
+					desired_wp.header.stamp = ros::Time::now();
+        				desired_wp.header.frame_id = "3dnav_action_frame";
+					trajectory_pub.publish(desired_wp);
+				}
+
+/*
 				geometry_msgs::Transform_<std::allocator<void> > punto=toExecute.points[k].transforms[0];
+				currentTime = toExecute.points[k].time_from_start;
 				bool eseguito=true;
 				if(k!=0){
-					eseguito=publishTranslationComand(punto,false);
+					dt = currentTime.toSec() - lastTime.toSec();
+					eseguito=publishTranslationComand(punto,false,dt);
 					if(k==(toExecute.points.size()-1)){
-						if(!eseguito) publishTranslationComand(punto,true);
+						if(!eseguito) publishTranslationComand(punto,true,dt);
 						publishRotationComand(punto,false);
 					}
 				} else {
@@ -117,22 +168,24 @@ private:
 				if(eseguito){
 					lastPosition.translation=punto.translation;
 					lastPosition.rotation=punto.rotation;
+					lastTime = toExecute.points[k].time_from_start;
 				}
+*/
 			}
 		}
 		active_goal_.setSucceeded();
 		has_active_goal_=false;
-		creato=0;
+		created=0;
 
 	}
-	bool publishTranslationComand(geometry_msgs::Transform_<std::allocator<void> > punto, bool anyway){
+	bool publishTranslationComand(geometry_msgs::Transform_<std::allocator<void> > punto, bool anyway, double dt){
 		//creazione comando di traslazione
-		cmd.linear.x=punto.translation.x-lastPosition.translation.x;
-		cmd.linear.y=punto.translation.y-lastPosition.translation.y;
-		cmd.linear.z=punto.translation.z-lastPosition.translation.z;
+		cmd.linear.x=(punto.translation.x-lastPosition.translation.x)/dt;
+		cmd.linear.y=(punto.translation.y-lastPosition.translation.y)/dt;
+		cmd.linear.z=(punto.translation.z-lastPosition.translation.z)/dt;
 		cmd.angular.x=cmd.angular.y=cmd.angular.z=0;
 
-		if(anyway || cmd.linear.x>=0.5 || cmd.linear.y>=0.5 || cmd.linear.z>=0.5){
+		if(anyway || cmd.linear.x>=0.05 || cmd.linear.y>=0.05 || cmd.linear.z>=0.05){
 			printPositionInfo();
 			printCmdInfo();
 			pub_topic.publish(cmd);
@@ -165,7 +218,8 @@ private:
 				", "<<lastPosition.translation.z<<"] "<<
 				"[ "<<lastPosition.rotation.x<<
 				", "<<lastPosition.rotation.y<<
-				", "<<lastPosition.rotation.z<<" ]");
+				", "<<lastPosition.rotation.z<<" ] ");
+		printf(" Start Position: [%.2f,%.2f,%.2f] [%.2f,%.2f,%.2f] \n",lastPosition.translation.x,lastPosition.translation.y,lastPosition.translation.z,lastPosition.rotation.x,lastPosition.rotation.y,lastPosition.rotation.z);
 	}
 
 	void printCmdInfo(){
@@ -175,13 +229,14 @@ private:
 				<<" rX: " << cmd.angular.x
 				<<" rY: " << cmd.angular.y
 				<<" rZ: " << cmd.angular.z);
+		printf("cmd to execute: X:%.2f y:%.2f z:%.2f rx:%.2f ry:%.2f rz:%.2f \n", cmd.linear.x, cmd.linear.y, cmd.linear.z, cmd.angular.x, cmd.angular.y, cmd.angular.z);
 	}
 
 };
 
 int main(int argc, char** argv)
 {
-	ros::init(argc, argv, "my_controller_node");
+	ros::init(argc, argv, "action_controller_node");
 	ros::NodeHandle node;//("~");
 	Controller control(node);
 

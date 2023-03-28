@@ -1,69 +1,37 @@
+#!/usr/bin/env python
+
 import rospy
 import smach
 import smach_ros
-import actionlib
+from moveit_commander import RobotCommander, PlanningSceneInterface
+from moveit_commander import MoveGroupCommander
+from geometry_msgs.msg import PoseStamped
 
-from action_controller.msg import MultiDofFollowJointTrajectoryAction, MultiDofFollowJointTrajectoryGoal
-from geometry_msgs.msg import Transform, Vector3
 
-
-class MoveRobot(smach.State):
-    def __init__(self):
-        smach.State.__init__(self, outcomes=['succeeded', 'aborted'], input_keys=['trajectory', 'orientations'])
-
-        self.client = actionlib.SimpleActionClient(
-            'multi_dof_joint_trajectory_action', MultiDofFollowJointTrajectoryAction)
+class UpdatePoseState(smach.State):
+    def __init__(self, group_name):
+        smach.State.__init__(self, outcomes=['success', 'aborted'])
+        self.group_name = group_name
 
     def execute(self, userdata):
-        if len(userdata.trajectory) != len(userdata.orientations):
-            rospy.logerr('Number of points in trajectory and orientations do not match')
-            return 'aborted'
+        move_group = MoveGroupCommander(self.group_name)
 
-        goal = MultiDofFollowJointTrajectoryGoal()
-        goal.trajectory.joint_names.append('Base')
+        # Set the target pose for the end effector
+        target_pose = PoseStamped()
+        target_pose.header.frame_id = move_group.get_planning_frame()
+        target_pose.pose.position.x = 0.5
+        target_pose.pose.position.y = 0.5
+        target_pose.pose.position.z = 0.5
+        target_pose.pose.orientation.x = 0.0
+        target_pose.pose.orientation.y = 0.0
+        target_pose.pose.orientation.z = 0.0
+        target_pose.pose.orientation.w = 1.0
 
-        for i in range(len(userdata.trajectory)):
-            transform = Transform()
-            transform.translation = Vector3(userdata.trajectory[i][0], userdata.trajectory[i][1], userdata.trajectory[i][2])
-            transform.rotation.x = userdata.orientations[i][0]
-            transform.rotation.y = userdata.orientations[i][1]
-            transform.rotation.z = userdata.orientations[i][2]
-            transform.rotation.w = userdata.orientations[i][3]
-
-            goal.trajectory.points.append(MultiDofFollowJointTrajectoryGoal().trajectory.points.append(transform))
-
-        self.client.wait_for_server()
-
-        self.client.send_goal(goal)
-
-        self.client.wait_for_result()
-
-        result = self.client.get_state()
-
-        if result == actionlib.GoalStatus.SUCCEEDED:
-            return 'succeeded'
+        # Plan and execute the movement
+        move_group.set_pose_target(target_pose)
+        plan = move_group.go(wait=True)
+        if plan:
+            return 'success'
         else:
             return 'aborted'
-        
 
-def main():
-    rospy.init_node('move_robot')
-
-    sm = smach.StateMachine(outcomes=['succeeded', 'aborted', 'preempted'])
-
-    with sm:
-        smach.StateMachine.add('MOVE_ROBOT', MoveRobot(), 
-                               transitions={'succeeded': 'succeeded', 'aborted': 'aborted'})
-
-    sis = smach_ros.IntrospectionServer('server_name', sm, '/SM_ROOT')
-    sis.start()
-
-    outcome = sm.execute()
-
-    sis.stop()
-
-    rospy.spin()
-
-
-if __name__ == '__main__':
-    main()
