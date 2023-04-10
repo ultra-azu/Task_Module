@@ -1,0 +1,24 @@
+
+FROM moveit/moveit:melodic-source
+
+# Install smach and smach_viewer
+RUN apt update && apt install -y\
+ ros-melodic-smach\
+ ros-melodic-smach-ros\
+ ros-melodic-executive-smach\
+ ros-melodic-smach-viewer
+
+RUN sudo apt install vim -y
+
+#Dowload example packages
+WORKDIR /root/ws_moveit/src
+RUN git clone https://github.com/ros-planning/moveit_tutorials.git -b melodic-devel
+RUN git clone https://github.com/ros-planning/panda_moveit_config.git -b melodic-devel
+RUN rosdep install -y --from-paths . --ignore-src --rosdistro melodic
+
+#Build The Catkin Workspace
+RUN rosdep update
+WORKDIR /root/ws_moveit
+RUN catkin config --extend /opt/ros/${ROS_DISTRO} --cmake-args -DCMAKE_BUILD_TYPE=Release
+RUN catkin build
+RUN echo 'source '$ROS_UNDERLAY'/setup.bash' >> ~/.bashrc
