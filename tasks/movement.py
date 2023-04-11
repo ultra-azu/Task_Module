@@ -12,11 +12,12 @@ import rospy
 from sensor_msgs.msg import Image, Imu
 from geometry_msgs.msg import TwistStamped
 from cv_bridge import CvBridge, CvBridgeError
+from tf.transformations import quaternion_from_euler
 
 
 class UpdatePoseState(smach.State):
     def __init__(self, group_name, target_pose):
-        smach.State.__init__(self, outcomes=['success', 'aborted'])
+        smach.State.__init__(self, outcomes=['success', 'aborted', 'preempted'])
         self.group_name = group_name
         self.pose = None
         self.camera_data = None
@@ -61,6 +62,71 @@ class UpdatePoseState(smach.State):
             return 'aborted'
 
 
+class UpdatePoseToObjectState(UpdatePoseState):
+    def __init__(self, group_name, object_topic, desired_object_name):
+        super(UpdatePoseToObjectState, self).__init__(group_name)
+        self.object_data = None
+        self.object_topic = object_topic
+        self.desired_object_name = desired_object_name
+
+        # Subscribe to the object topic
+        self.object_sub = rospy.Subscriber(self.object_topic, self.object_callback)
+
+    def object_callback(self, data):
+        for object in data.objects:
+            if data.name == self.desired_object_name:
+                self.object_data = data.pose
+
+    def execute(self, userdata):
+        move_group = MoveGroupCommander(self.group_name)
+
+        if self.object_data is not None:
+            # Set the target pose for the end effector to the object pose
+            self.target_pose = self.object_data
+
+            # Plan and execute the movement
+            move_group.set_pose_target(self.target_pose)
+            plan = move_group.go(wait=True)
+            
+            if plan:
+                return 'success'
+            else:
+                return 'aborted'
+        else:
+            if self.camera_data is None and self.imu_data is None and self.dvl_data is None:
+                # Process sensor data
+                return 'preempted'
+            else:
+                return 'aborted'
+
+
+class Rotate90DegreesState(UpdatePoseState):
+    def __init__(self, group_name):
+        super(Rotate90DegreesState, self).__init__(group_name)
+
+    def execute(self, userdata):
+        move_group = MoveGroupCommander(self.group_name)
+
+        # Get the current pose
+        current_pose = move_group.get_current_pose().pose
+
+        # Compute the new orientation after a 90-degree rotation around the Z-axis
+        new_orientation = quaternion_from_euler(0, 0, current_pose.orientation.z + 1.5708)  # 1.5708 radians = 90 degrees
+
+        # Set the target pose for the end effector
+        target_pose = PoseStamped()
+        target_pose.header.frame_id = move_group.get_planning_frame()
+        target_pose.pose.position = current_pose.position
+        target_pose.pose.orientation = Quaternion(*new_orientation)
+
+        # Plan and execute the movement
+        move_group.set_pose_target(target_pose)
+        plan = move_group.go(wait=True)
+        
+        if plan:
+            return 'success'
+        else:
+            return 'aborted'
 
 class HoldPositionTask(smach.State):
     """Hold position at the place the robot is at the first time this runs"""
@@ -81,3 +147,5 @@ class HoldPositionTask(smach.State):
             self.first_pose = False
 
         return 'done'
+    
+
