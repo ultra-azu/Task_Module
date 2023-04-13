@@ -27,9 +27,9 @@ class UpdatePoseState(smach.State):
         self.target_pose = target_pose
 
         # Subscribe to the camera, IMU, and DVL topics
-        self.image_sub = rospy.Subscriber('/camera/image_raw', Image, self.camera_callback)
-        self.imu_sub = rospy.Subscriber('/imu/data', Imu, self.imu_callback)
-        self.dvl_sub = rospy.Subscriber('/dvl/data', TwistStamped, self.dvl_callback)
+        # self.image_sub = rospy.Subscriber('/camera/image_raw', Image, self.camera_callback)
+        # self.imu_sub = rospy.Subscriber('/imu/data', Imu, self.imu_callback)
+        # self.dvl_sub = rospy.Subscriber('/dvl/data', TwistStamped, self.dvl_callback)
 
     def camera_callback(self, data):
         try:
@@ -127,6 +127,21 @@ class Rotate90DegreesState(UpdatePoseState):
             return 'success'
         else:
             return 'aborted'
+        
+# TODO: FIx the Lower Depth Class
+class LowerDepth(smach.State):
+    def __init__(self, controls):
+        smach.State.__init__(self, outcomes=['success', 'aborted', 'preempted'])
+        self.controls = controls
+        self.first_pose = True
+
+    def execute(self, userdata):
+        if self.first_pose:
+            self.hold_pose = self.controls.get_state().pose.pose
+            self.controls.move_to_pose_global(self.hold_pose)
+            self.first_pose = False
+
+        return 'done'
 
 class HoldPositionTask(smach.State):
     """Hold position at the place the robot is at the first time this runs"""
