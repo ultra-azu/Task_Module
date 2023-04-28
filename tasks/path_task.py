@@ -6,7 +6,7 @@ import utils
 
 class FollowPathState(UpdatePoseToObjectState):
     def __init__(self, move_group_name, object_topic, desired_object_name):
-        super__init__(self, move_group_name, object_topic, desired_object_name)
+        super.__init__(self, move_group_name, object_topic, desired_object_name)
         smach.State.__init__(self, outcomes=['success', 'aborted', 'preempted'])
         self.move_group_name = move_group_name
         self.object_sub = rospy.Subscriber(self.object_topic, self.pingerTrack)

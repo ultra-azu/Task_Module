@@ -1,10 +1,10 @@
 import rospy
 import smach
 from movement import * 
+from enum import Enum
 
-
+bouy_types  = Enum('Color', ['Abyddos', 'Earth'])
 class CheckImageVisibleState(smach.State):
-    
     def __init__(self, image_topic, desired_object_name):
         smach.State.__init__(self, outcomes=['undetected', 'detected', 'preempted'])
         self.image_data = None

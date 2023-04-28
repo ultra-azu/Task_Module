@@ -37,8 +37,6 @@ class CheckImageVisibleState(smach.State):
                     return 'undetected'
             else:
                 return 'preempted'
-
-
     with sm:
         # Fix the Todo in lower depth state
         smach.StateMachine.add('Lower_Depth', LowerDepth(move_group_name),s
@@ -53,8 +51,8 @@ class CheckImageVisibleState(smach.State):
                                  transitions={'success': 'CHECK_IMAGE_VISIBLE',
                                               'aborted': 'aborted',
                                               'preempted': 'preempted'},)
-        
-        smach.StateMachine.add('SURVEY_GATE', UpdatePoseToObjectState(move_group_name, object_topic, 'Gate'),
+        #TODO:: Make a state machine that take account the two types of gates 
+        smach.StateMachine.add('SURVEY_GATE', UpdatePoseToObjectState(move_group_name, object_topic, gate),
                                  transitions={'success': 'completed',
                                               'aborted': 'aborted',
                                               'preempted': 'preempted'},)
