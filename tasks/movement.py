@@ -16,7 +16,7 @@ from tf.transformations import quaternion_from_euler
 
 
 class UpdatePoseState(smach.State):
-    def __init__(self, group_name, target_pose):
+    def __init__(self, group_name, target_pose, debug=False):
         smach.State.__init__(self, outcomes=['success', 'aborted', 'preempted'])
         self.group_name = group_name
         self.pose = None
@@ -25,6 +25,7 @@ class UpdatePoseState(smach.State):
         self.dvl_data = None
         self.cv_bridge = CvBridge()
         self.target_pose = target_pose
+        self.debug = False
 
         # Subscribe to the camera, IMU, and DVL topics
         # self.image_sub = rospy.Subscriber('/camera/image_raw', Image, self.camera_callback)
@@ -49,6 +50,10 @@ class UpdatePoseState(smach.State):
         # Set the target pose for the end effector
         self.target_pose.header.frame_id = move_group.get_planning_frame()
 
+        if self.debug:
+            rospy.loginfo("Target pose: {0}".format(self.target_pose))
+            return "success"
+
         # Plan and execute the movement
         move_group.set_pose_target(self.target_pose)
         plan = move_group.go(wait=True)
@@ -63,8 +68,8 @@ class UpdatePoseState(smach.State):
 
 
 class UpdatePoseToObjectState(UpdatePoseState):
-    def __init__(self, group_name, object_topic, desired_object_name):
-        super(UpdatePoseToObjectState, self).__init__(group_name)
+    def __init__(self, group_name, object_topic, desired_object_name,debug):
+        super(UpdatePoseToObjectState, self).__init__(group_name,debug)
         self.object_data = None
         self.object_topic = object_topic
         self.desired_object_name = desired_object_name
@@ -84,6 +89,12 @@ class UpdatePoseToObjectState(UpdatePoseState):
             # Set the target pose for the end effector to the object pose
             self.target_pose = self.object_data
 
+            # If debug is enabled, print the object pose
+            if self.debug:
+                print(f"Moving to: {self.desired_object_name}: {self.object_data}")
+                return 'success'
+            
+
             # Plan and execute the movement
             move_group.set_pose_target(self.target_pose)
             plan = move_group.go(wait=True)
@@ -101,8 +112,8 @@ class UpdatePoseToObjectState(UpdatePoseState):
 
 
 class Rotate90DegreesState(UpdatePoseState):
-    def __init__(self, group_name):
-        super(Rotate90DegreesState, self).__init__(group_name)
+    def __init__(self, group_name, debug=False):
+        super(Rotate90DegreesState, self).__init__(group_name, debug)
 
     def execute(self, userdata):
         move_group = MoveGroupCommander(self.group_name)
@@ -118,6 +129,11 @@ class Rotate90DegreesState(UpdatePoseState):
         target_pose.header.frame_id = move_group.get_planning_frame()
         target_pose.pose.position = current_pose.position
         target_pose.pose.orientation = Quaternion(*new_orientation)
+
+        if self.debug:
+            print(f"Rotating 90 Degrees: {target_pose}")
+            return 'success'
+
 
         # Plan and execute the movement
         move_group.set_pose_target(target_pose)
