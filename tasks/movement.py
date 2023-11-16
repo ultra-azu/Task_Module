@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 import rospy
 import smach
 from uuv_control_msgs.srv import GoTo
@@ -7,34 +5,15 @@ from geometry_msgs.msg import PoseStamped
 from uuv_control_msgs.msg import Waypoint
 
 class UpdatePoseState(smach.State):
-    def __init__(self, group_name, target_pose, debug=False):
-        smach.State.__init__(self, outcomes=['success', 'aborted', 'preempted'])
+    def __init__(self, group_name, target_pose):
+        smach.State.__init__(self, outcomes=['success', 'aborted', 'preempted'],
+                             input_keys=['camera_data_in', 'imu_data_in', 'dvl_data_in'],
+                             output_keys=['camera_data_out', 'imu_data_out', 'dvl_data_out'])
         self.group_name = group_name
-        self.pose = None
-        self.camera_data = None
-        self.imu_data = None
-        self.dvl_data = None
         self.target_pose = target_pose
         self.goto_service = rospy.ServiceProxy('/your_goto_service', GoTo)
-        self.debug = False
 
-        # Subscribe to the camera, IMU, and DVL topics
-        # self.image_sub = rospy.Subscriber('/camera/image_raw', Image, self.camera_callback)
-        # self.imu_sub = rospy.Subscriber('/imu/data', Imu, self.imu_callback)
-        # self.dvl_sub = rospy.Subscriber('/dvl/data', TwistStamped, self.dvl_callback)
-
-    def camera_callback(self, data):
-        try:
-            self.camera_data = self.cv_bridge.imgmsg_to_cv2(data, desired_encoding='bgr8')
-        except CvBridgeError as e:
-            rospy.logerr("CvBridge Error: {0}".format(e))
-
-    def imu_callback(self, data):
-        self.imu_data = data
-
-    def dvl_callback(self, data):
-        self.dvl_data = data
-
+        # Initialize subscribers in the main node, not here
     def execute(self, userdata):
         # Prepare the waypoint message
         waypoint = Waypoint()
@@ -51,15 +30,42 @@ class UpdatePoseState(smach.State):
         goto_request.waypoint = waypoint
         goto_request.interpolator = 'linear'
 
-        try:
-            response = self.goto_service(goto_request)
-            if response.success:
-                return 'success'
-            else:
+        # Loop until service response is success or timeout/error occurs
+        start_time = rospy.Time.now()
+        timeout = rospy.Duration(30)  # 30 seconds timeout, adjust as needed
+        while rospy.Time.now() - start_time < timeout:
+            try:
+                response = self.goto_service(goto_request)
+                if response.success:
+                    rospy.loginfo("GoTo service succeeded.")
+                    return 'success'
+                else:
+                    # Handle non-successful response
+                    rospy.sleep(1)  # Wait for some time before retrying, adjust as needed
+            except rospy.ServiceException as e:
+                rospy.logerr("Service call failed: %s" % e)
                 return 'aborted'
-        except rospy.ServiceException as e:
-            rospy.logerr("Service call failed: %s" % e)
-            return 'aborted'
+
+            # Check DVL and IMU data for edge cases
+            imu_data = userdata.imu_data_in
+            dvl_data = userdata.dvl_data_in
+            if self.detect_edge_case(imu_data, dvl_data):
+                rospy.logwarn("Edge case detected, aborting operation.")
+                return 'aborted'
+
+            rospy.sleep(0.1)  # Sleep to prevent a busy loop, adjust as needed
+
+        rospy.logerr("Timeout reached, aborting operation.")
+        return 'aborted'
+
+def detect_edge_case(self, imu_data, dvl_data):
+    # Implement your logic to detect edge cases
+    # Return True if an edge case is detected, False otherwise
+    # Example:
+    # if dvl_data.speed > some_threshold:
+    #     return True
+    # ...
+    return False
 
 class UpdatePoseToObjectState(UpdatePoseState):
     def __init__(self, group_name, object_topic, desired_object_name,debug):

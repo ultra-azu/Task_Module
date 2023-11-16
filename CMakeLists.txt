@@ -36,26 +36,13 @@ generate_messages(
   uuv_control_msgs
 )
 
-###################################
-## catkin specific configuration ##
-###################################
-catkin_package(
-#  INCLUDE_DIRS include
-#  LIBRARIES lib
-#  CATKIN_DEPENDS packages
-#  DEPENDS system_lib
-uuv_control_msgs
-)
+
 
 #############
 ## Install ##
 #############
 
-## Mark Python executables and/or modules for installation
-catkin_install_python(PROGRAMS
-  scripts/my_python_script.py
-  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-)
+
 
 ## mark other files for installation (e.g. launch and bag files, etc.)
 install(DIRECTORY launch
