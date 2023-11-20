@@ -3,7 +3,7 @@ import smach
 from uuv_control_msgs.srv import GoTo, GoToRequest
 from geometry_msgs.msg import PoseStamped
 from uuv_control_msgs.msg import Waypoint
-from [package_name].srv import Hold, HoldRequest
+from uuv_control_msgs.srv import Hold, HoldRequest
 
 import rospy
 import smach

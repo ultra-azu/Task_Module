@@ -24,6 +24,8 @@ This is the repository for the rumarino Task Module. Definitions ofthe State mac
 
  - Marker.msg
 
+ - nav_msgs/Odometry.msg
+
 
 
  The DVL have the following Messages:
@@ -92,7 +94,16 @@ TODO: Currently our implementation on Hydrus in the uuv simulator is under devel
 
 
 
+### Connecting the Sensor Messages to the Control System
+
+The uuv_simulator have the following nodes and topics structures when using the `rov_pid_controller.py` node. 
+
+![graph of nodes in rexrov](config/rosgraph.jpg)
 
 
 
+What interest us is to replace the Odometer data that is defined in here as `/rexrov2/pose_gt`.
+
+
+What information we will implement for this is to be discussed. What needs the control system is a `Nav_msgs/Pose.msg` Neither the DVL or the IMU give is that infomation. Gladly the Zed camera in his node gives us that exact Message. Something that we could implement is to take the message of the camera to extract the Positional Tracking information and replace the other data with the more speciallyze sensors in the same output
 
