@@ -1,0 +1,17 @@
+zed_camera:
+  ObjectsStamped: "obj_det/objects"
+  RGBDSensors: "rgbd_sens"
+  PlaneStamped: "plane"
+  Marker: "plane_marker"
+
+dvl:
+  DVL_Message: "/wayfinder/topic_name"
+
+imu:
+  yaw: "/hydrus/IMU/yaw"
+  pitch: "/hydrus/IMU/pitch"
+  roll: "/hydrus/IMU/roll"
+
+uuv_control_services:
+  GoTo: "/your_goto_service"
+  Hold: "/rexrov2/hold_vehicle"

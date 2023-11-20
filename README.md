@@ -68,22 +68,30 @@ IMU Topics:
 
 UUV Control Services:
 
-- GoTo.srv: Takes a uuv_control_msgs/Waypoint,a float64 max_forward_speed and a string interpolator.
+- InitWayPoint
 
-- Hold.srv: A void functions that returns a boolean "success"
+- From Files
+
+- Hold.srv
 
 
 ## More Description about the Services.
 
 The services are defined in the uuv_simulator_package. In here is where is defined all the control system of the submarine.
-For our case thementioned services are defined in this [file](https://github.com/uuvsimulator/uuv_simulator/blob/master/uuv_control/uuv_trajectory_control/src/uuv_control_interfaces/dp_controller_local_planner.py).
+For our case the mentioned services are defined in this [file](https://github.com/uuvsimulator/uuv_simulator/blob/master/uuv_control/uuv_trajectory_control/src/uuv_control_interfaces/dp_controller_local_planner.py).
 
 
 
 ### Run the Task Module with the simulation
 
 
-In order to use it with the simulation you will need 
+In order to use it with the simulation you will need to run the Dockerfile.
+
+
+TODO: Currently our implementation on Hydrus in the uuv simulator is under development but meanwhile we can use the RexRov2 simulation
+
+
+
 
 
 

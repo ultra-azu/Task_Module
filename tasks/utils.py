@@ -2,6 +2,7 @@ import rospy
 import smach
 from movement import * 
 from enum import Enum
+import yaml
 
 bouy_types  = Enum('Color', ['Abyddos', 'Earth'])
 class CheckImageVisibleState(smach.State):
@@ -11,8 +12,6 @@ class CheckImageVisibleState(smach.State):
         self.image_topic = image_topic
         self.desired_object_name = desired_object_name
 
-        # Subscribe to the image topic
-        self.image_sub = rospy.Subscriber(self.image_topic, self.image_callback)
 
         def execute(self, userdata):
             if self.image_data is not None:
@@ -23,3 +22,8 @@ class CheckImageVisibleState(smach.State):
             else:
                 return 'preempted'
 
+
+# TODO
+def BasicMovementEdgeCase(shared_data,**kwargs):
+    for key, value in kwargs.items():
+        print("{} -> {}".format(key, value)) 

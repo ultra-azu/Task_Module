@@ -1,0 +1,22 @@
+version: '3'
+
+services:
+  uuv_simulator_moveit:
+    image: juandelpueblo/uuv_simulator_moveit
+    environment:
+      - DISPLAY=$DISPLAY
+      - LIBGL_ALWAYS_INDIRECT=1
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility,graphics
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix
+      - ./waypoint_test:/root/catkin_ws/src/waypoint_test
+    privileged: true
+    stdin_open: true # docker run -i
+    tty: true        # docker run -t
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]

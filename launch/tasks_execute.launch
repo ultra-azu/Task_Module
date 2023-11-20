@@ -1,6 +1,0 @@
-<launch>
-  <rosparam command="load" file="$(find your_package)/config/config.yaml" />
-
-  <node pkg="your_package" type="your_publisher_script.py" name="zed_object_publisher" />
-  <node pkg="your_package" type="your_state_machine_script.py" name="multidof6_state_machine" />
-</launch>
