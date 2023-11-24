@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <package format="2">
-    <name>combined_package</name>
+    <name>task_module</name>
     <version>0.1.0</version>
     <description>This is a combined package that includes dependencies for zed_nodelets, smach_tutorials, and nav_sensors.</description>
 

@@ -1,11 +1,11 @@
 # This is the example state machine  for
-# constrcuting the others machines with their respective 
+# constructing the others machines with their respective 
 # missions.
 
-from data import shared_data, initialize_subscribers
+from tasks.src.data import shared_data, initialize_subscribers
 import smach
 import rospy
-from movement import UpdatePoseState, UpdatePoseToObjectState
+from tasks.src.movement import UpdatePoseState, UpdatePoseToObjectState
 
 
 """
@@ -27,6 +27,8 @@ class CustomState(smach.StateMachine):
 class YourStateMachine(smach.StateMachine):
     def __init__(self):
         smach.StateMachine.__init__(self, outcomes=['success', 'failure'])
+        # shared_data is initialized inisde the initialize_subscribers() function
+        # This is a global variable that is shared between all the states.
         self.userdata.shared_data = shared_data
 
         with self:

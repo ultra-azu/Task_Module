@@ -107,3 +107,11 @@ What interest us is to replace the Odometer data that is defined in here as `/re
 
 What information we will implement for this is to be discussed. What needs the control system is a `Nav_msgs/Pose.msg` Neither the DVL or the IMU give is that infomation. Gladly the Zed camera in his node gives us that exact Message. Something that we could implement is to take the message of the camera to extract the Positional Tracking information and replace the other data with the more speciallyze sensors in the same output
 
+
+TODO:
+- Keep completing and fixing documentation
+- Run the StateMachines in the simulation
+
+- Create the LaunchFiles for starting the simulation with the task.
+- Create another launhfile for starting nly the Control system  + task.
+

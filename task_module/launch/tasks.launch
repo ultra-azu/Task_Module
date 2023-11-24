@@ -1,0 +1,5 @@
+<launch>
+    <!-- Launch the SMACH state machine script -->
+    <node pkg="TASK_MODULE" type="example.py" name="buoy_task_node" output="screen"/>
+
+</launch>

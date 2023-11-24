@@ -31,7 +31,6 @@ RUN . /opt/ros/melodic/setup.sh && \
 
 # Download ROS packages
 WORKDIR /root/catkin_ws/src
-RUN git clone https://github.com/ros-planning/moveit_tutorials.git -b melodic-devel
 RUN git clone https://github.com/uuvsimulator/uuv_simulator.git
 RUN git clone https://github.com/uuvsimulator/desistek_saga.git
 RUN git clone https://github.com/uuvsimulator/rexrov2.git

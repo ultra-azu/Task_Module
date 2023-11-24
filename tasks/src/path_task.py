@@ -1,7 +1,7 @@
 import rospy
 import smach
-from movement import * # Import the UpdatePoseToObjectState class
-import utils
+from tasks.src.movement import * # Import the UpdatePoseToObjectState class
+import tasks.src.utils as utils
 
 
 class FollowPathState(UpdatePoseToObjectState):

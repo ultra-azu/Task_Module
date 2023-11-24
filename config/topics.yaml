@@ -4,6 +4,10 @@ zed_camera:
   PlaneStamped: "plane"
   Marker: "plane_marker"
 
+
+pose:
+  Pose: "/rexrov2/pose_gt"
+
 dvl:
   DVL_Message: "/wayfinder/topic_name"
 

@@ -1,0 +1,8 @@
+<launch>
+    <!-- Include the start_demo_pid_controller.launch -->
+    <include file="$(find rexrov2_gazebo)/launch/start_demo_pid_controller.launch"/>
+    
+    <!-- Include the task.launch for SMACH state machines -->
+    <!-- Make sure to create this launch file in the specified package -->
+    <include file="$(find TASK_MODULE)/launch/task.launch"/>
+</launch>
