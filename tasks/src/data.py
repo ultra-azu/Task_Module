@@ -26,7 +26,8 @@ def zed_objects_callback(msg):
     shared_data.zed_data['ObjectsStamped'] = msg
 
 def zed_rgbd_callback(msg):
-    shared_data.zed_data[]
+    # shared_data.zed_data[]
+    pass
 
 def dvl_callback(msg):
     shared_data.dvl_data = msg

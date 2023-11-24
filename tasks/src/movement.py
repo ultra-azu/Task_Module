@@ -21,6 +21,7 @@ class UpdatePoseState(smach.State):
         self.edge_case_callback = edge_case_callback
         self.next_state_callback = next_state_callback
         self.num_waypoints = num_waypoints
+        self.waypoints = []
         self.init_waypoint_set_service = rospy.ServiceProxy('init_waypoint_set', InitWaypointSet)
 
     def generate_waypoints(self):
@@ -34,6 +35,12 @@ class UpdatePoseState(smach.State):
             waypoint.radius_of_acceptance = random.uniform(0, 5)
             waypoints.append(waypoint)
         return waypoints
+    
+
+    def pose_reached(self, current_pose: Pose, destination_pose: Pose, threshold: float) -> bool:
+        # Check if the current pose is within a certain threshold of the destination pose
+        # The function 'compare_poses' should return True if the poses are similar within the threshold
+        return compare_poses(current_pose, destination_pose, threshold)
 
     def execute(self, userdata):
         shared_data = userdata.shared_data
@@ -57,11 +64,18 @@ class UpdatePoseState(smach.State):
             rospy.logerr("Service call failed: %s" % e)
             return 'aborted'
 
-        # Monitoring loop
+         # Monitoring loop
         while not rospy.is_shutdown():
+
+            # Check if the destination has been reached
+            if self.pose_reached(userdata.shared_data.current_pose, self.zedObject2Waypoint().point, threshold=YOUR_DEFINED_THRESHOLD):
+                rospy.loginfo("Destination has been reached.")
+                return 'success'
+
             if self.edge_case_callback(shared_data):
                 rospy.logwarn("Edge case detected, transitioning to handle situation.")
-                return self.next_state_callback(shared_data)
+                userdata.edge_case = self.next_state_callback()
+                return "edge_case_detected"
 
             rospy.sleep(0.1)  # Sleep to prevent a busy loop, adjust as needed
 
@@ -69,50 +83,67 @@ class UpdatePoseState(smach.State):
 
 
 class UpdatePoseToObjectState(UpdatePoseState):
-    def __init__(self, desired_object_name, num_waypoints=3):
-        super(UpdatePoseToObjectState, self).__init__(num_waypoints=num_waypoints)
+    def __init__(self, desired_object_name, edge_case_callback,next_state_callback ):
+        super(UpdatePoseToObjectState, self).__init__(outcomes=['success', 'edge_case_detected', 'aborted', "object_not_detected"],
+                                                      input_keys=['shared_data'],
+                                                      output_keys=['edge_case'],
+                                                 edge_case_callback=edge_case_callback,
+                                                   next_state_callback=next_state_callback)
         self.desired_object_name = desired_object_name
+        self.object_data = None
+
+    def zedObject2Waypoint(self) -> Waypoint:
+        object_waypoint = Waypoint()
+        object_waypoint.header.stamp = rospy.Time.now()
+        object_waypoint.header.frame_id = "world"
+        object_waypoint.point = self.object_data.position  #
+        return object_waypoint
 
     def execute(self, userdata):
         shared_data = userdata.shared_data
+        for object in  shared_data.zed_data["ObjectStamped"]:
+            if self.desired_object_name == object.label:
+                self.object_data = object
 
-        if self.desired_object_name in shared_data:
-            self.object_data = shared_data[self.desired_object_name]
+        if self.object_data:
+            object_waypoint = self.zedObject2Waypoint()
+            self.waypoints.append(object_waypoint)
 
-            # Prepare the waypoint message for the object's position
-            waypoints = self.generate_waypoints()
-            object_waypoint = Waypoint()
-            object_waypoint.header.stamp = rospy.Time.now()
-            object_waypoint.header.frame_id = "world"
-            object_waypoint.point = self.object_data.position  # Assuming object_data has a 'position' attribute of type Point
-            waypoints.append(object_waypoint)
-
-            # Prepare and call InitWaypointSet service
-            try:
-                req = InitWaypointSetRequest()
-                req.start_time = Time()  # Zero value by default
-                req.start_now = True
-                req.waypoints = waypoints
-                req.max_forward_speed = 1.5
-                req.heading_offset = 0.0
-                req.interpolator = 'linear'
-
-                response = self.init_waypoint_set_service(req)
-                if not response.success:
-                    rospy.logerr("Failed to initiate InitWaypointSet service.")
-                    return 'aborted'
-            except rospy.ServiceException as e:
-                rospy.logerr("Service call failed: %s" % e)
-                return 'aborted'
         else:
-            rospy.logwarn(f"Desired object '{self.desired_object_name}' not found in shared data.")
+            # Failed to identify object
+            return "object_not_detected"
+
+        # Prepare and call InitWaypointSet service
+        try:
+            req = InitWaypointSetRequest()
+            req.start_time = Time()  # Zero value by default
+            req.start_now = True
+            req.waypoints = self.waypoints
+            req.max_forward_speed = 1.5
+            req.heading_offset = 0.0
+            req.interpolator = 'linear'
+
+            response = self.init_waypoint_set_service(req)
+            if not response.success:
+                rospy.logerr("Failed to initiate InitWaypointSet service.")
+                return 'aborted'
+        except rospy.ServiceException as e:
+            rospy.logerr("Service call failed: %s" % e)
             return 'aborted'
+        
 
         # Monitoring loop
         while not rospy.is_shutdown():
+
+            # Check if the destination has been reached
+            if self.pose_reached(userdata.shared_data.current_pose, self.zedObject2Waypoint().point, threshold=YOUR_DEFINED_THRESHOLD):
+                rospy.loginfo("Destination has been reached.")
+                return 'success'
+
             if self.edge_case_callback(shared_data):
                 rospy.logwarn("Edge case detected, transitioning to handle situation.")
-                return self.next_state_callback(shared_data)
+                userdata.edge_case = self.next_state_callback()
+                return "edge_case_detected"
 
             rospy.sleep(0.1)  # Sleep to prevent a busy loop, adjust as needed
 

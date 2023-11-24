@@ -12,14 +12,16 @@ from tasks.src.movement import UpdatePoseState, UpdatePoseToObjectState
 --------------------------------------------
 DEFINE YOUR CUSTOM STATES IN HERE IF NECESSARY
 --------------------------------------------
-
-class CustomState(smach.StateMachine):
-    def __init__(self):
-        pass
-
 """
+# Define state Foo
+class Foo(smach.State):
+    def __init__(self):
+        smach.State.__init__(self, outcomes=['try_again'])
 
-
+    def execute(self, userdata):
+        print("Try Again to detect object")
+        return "try_again"
+    
 
 
 
@@ -32,7 +34,8 @@ class YourStateMachine(smach.StateMachine):
         self.userdata.shared_data = shared_data
 
         with self:
-            smach.StateMachine.add('UPDATE_POSE', UpdatePoseState(...), transitions={'success':'ANOTHER_STATE', 'aborted':'failure', 'preempted':'failure'}, remapping={'camera_data_in':'shared_data'})
+            smach.StateMachine.add('move_to_object', UpdatePoseToObjectState(), transitions={'success':'ANOTHER_STATE', 'aborted':'failure', 'edge_cade_detected':'FOO', "object_not_detected":"FOO"})
+            smach.StateMachine.add('FOO', Foo(), transitions={'success':'ANOTHER_STATE', 'aborted':''})
 
 # Running the state machine
 if __name__ == '__main__':
