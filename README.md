@@ -110,5 +110,6 @@ What information we will implement for this is to be discussed. What needs the c
 
 TODO:
 - Keep completing and fixing documentation
+- Setup the Network 
 - Run the StateMachines in the simulation
-- Complete the check compare_poses
+- 
