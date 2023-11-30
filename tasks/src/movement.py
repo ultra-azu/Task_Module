@@ -12,7 +12,7 @@ from std_msgs.msg import Time
 from geometry_msgs.msg import Point
 from uuv_control_msgs.srv import InitWaypointSet, InitWaypointSetRequest
 from uuv_control_msgs.msg import Waypoint
-
+from robot_math import compare_poses
 class UpdatePoseState(smach.State):
     def __init__(self, edge_case_callback,next_state_callback ,num_waypoints=3):
         smach.State.__init__(self, outcomes=['success', 'edge_case_detected', 'aborted', 'preempted'],
