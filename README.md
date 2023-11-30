@@ -111,7 +111,4 @@ What information we will implement for this is to be discussed. What needs the c
 TODO:
 - Keep completing and fixing documentation
 - Run the StateMachines in the simulation
-
-- Create the LaunchFiles for starting the simulation with the task.
-- Create another launhfile for starting nly the Control system  + task.
-
+- Complete the check compare_poses

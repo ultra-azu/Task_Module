@@ -1,49 +1,30 @@
 <?xml version="1.0"?>
 <package format="2">
-    <name>task_module</name>
+    <name>Task_Module</name>
     <version>0.1.0</version>
-    <description>This is a combined package that includes dependencies for zed_nodelets, smach_tutorials, and nav_sensors.</description>
+    <description>A package that includes and utilizes the tasks package for specific functionalities.</description>
 
     <maintainer email="your-email@example.com">Your Name</maintainer>
     <license>BSD</license>
 
-    <!-- URLs from zed_nodelets and smach_tutorials -->
-    <url type="website">http://stereolabs.com/</url>
-    <url type="repository">https://github.com/stereolabs/zed-ros-wrapper</url>
-    <url type="bugtracker">https://github.com/stereolabs/zed-ros-wrapper/issues</url>
-    <url>http://ros.org/wiki/smach_tutorials</url>
+    <!-- URL for the repository or website of the Task_Module package -->
+    <url type="website">http://example.com/Task_Module</url>
+    <url type="repository">http://github.com/your-repo/Task_Module</url>
+    <url type="bugtracker">http://github.com/your-repo/Task_Module/issues</url>
 
     <!-- Common build tool dependency -->
     <buildtool_depend>catkin</buildtool_depend>
 
-    <!-- Combined dependencies -->
-    <depend>tf2_ros</depend>
-    <depend>tf2_geometry_msgs</depend>
-    <depend>nav_msgs</depend>
-    <depend>sensor_msgs</depend>
-    <depend>stereo_msgs</depend>
-    <depend>dynamic_reconfigure</depend>
-    <depend>nodelet</depend>
-    <depend>diagnostic_updater</depend>
-    <depend>geometry_msgs</depend>
-    <depend>visualization_msgs</depend>    
-    <depend>zed_interfaces</depend>
-    <depend>message_runtime</depend>
-    <depend>rospy</depend>
-    <depend>smach</depend>
-    <depend>smach_ros</depend>
-    <depend>actionlib</depend>
-    <depend>actionlib_msgs</depend>
-    <depend>message_generation</depend>
-    <depend>rosbag</depend>
-    <depend>std_msgs</depend>
-    <depend>topic_tools</depend>
+    <!-- Dependencies for the Task_Module -->
+    <!-- Add dependencies as needed -->
+    <!-- <depend>some_other_dependency</depend> -->
 
-    <!-- Adding uuv_control_msgs as an exec dependency -->
-    <exec_depend>uuv_control_msgs</exec_depend>
+    <!-- Execution-time dependency on the tasks package -->
+    <exec_depend>tasks</exec_depend>
 
-    <!-- Export tag from zed_nodelets -->
-    <export>
-        <nodelet plugin="${prefix}/nodelet_plugins.xml"/>
-    </export>
+
+    <!-- TO ADD LATER -->
+    <!-- <exec_depend>zed_wrapper</exec_depend> -->
+    <!-- <exec_depend>nav_sensors</exec_depend> -->
+
 </package>
