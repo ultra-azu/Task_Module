@@ -1,7 +1,7 @@
 import rospy
 import smach
 from uuv_control_msgs.srv import GoTo, GoToRequest
-from geometry_msgs.msg import PoseStamped
+from geometry_msgs.msg import Pose, PoseStamped, Point
 from uuv_control_msgs.msg import Waypoint
 from uuv_control_msgs.srv import Hold, HoldRequest
 
@@ -13,8 +13,10 @@ from geometry_msgs.msg import Point
 from uuv_control_msgs.srv import InitWaypointSet, InitWaypointSetRequest
 from uuv_control_msgs.msg import Waypoint
 from robot_math import compare_poses
+
+
 class UpdatePoseState(smach.State):
-    def __init__(self, edge_case_callback,next_state_callback ,num_waypoints=3):
+    def __init__(self, edge_case_callback,next_state_callback , pose: Pose,num_waypoints=3):
         smach.State.__init__(self, outcomes=['success', 'edge_case_detected', 'aborted', 'preempted'],
                              input_keys=['shared_data'],
                              output_keys=['shared_data'])
@@ -23,6 +25,7 @@ class UpdatePoseState(smach.State):
         self.num_waypoints = num_waypoints
         self.waypoints = []
         self.init_waypoint_set_service = rospy.ServiceProxy('init_waypoint_set', InitWaypointSet)
+        self.pose = pose
 
     def generate_waypoints(self):
         waypoints = []
@@ -37,6 +40,17 @@ class UpdatePoseState(smach.State):
         return waypoints
     
 
+    def WaypointFromPose(self):
+        waypoints = []
+        waypoint = Waypoint()
+        waypoint.point = self.pose.point
+        waypoint.max_forward_speed = random.uniform(0, 5)
+        waypoint.heading_offset = random.uniform(-3.14, 3.14)
+        waypoint.use_fixed_heading = random.choice([True, False])
+        waypoint.radius_of_acceptance = random.uniform(0, 5)
+        waypoints.append(waypoint)
+    
+
     def pose_reached(self, current_pose: Pose, destination_pose: Pose, threshold: float) -> bool:
         # Check if the current pose is within a certain threshold of the destination pose
         # The function 'compare_poses' should return True if the poses are similar within the threshold
@@ -47,7 +61,8 @@ class UpdatePoseState(smach.State):
 
         # Call InitWaypointSet service
         try:
-            waypoints = self.generate_waypoints()
+            # waypoints = self.generate_waypoints()
+
             req = InitWaypointSetRequest()
             req.start_time = Time()  # Zero value by default
             req.start_now = True
@@ -136,7 +151,7 @@ class UpdatePoseToObjectState(UpdatePoseState):
         while not rospy.is_shutdown():
 
             # Check if the destination has been reached
-            if self.pose_reached(userdata.shared_data.current_pose, self.zedObject2Waypoint().point, threshold=YOUR_DEFINED_THRESHOLD):
+            if self.pose_reached(userdata.shared_data.current_pose, self.zedObject2Waypoint().point, threshold=10):
                 rospy.loginfo("Destination has been reached.")
                 return 'success'
 
@@ -150,6 +165,7 @@ class UpdatePoseToObjectState(UpdatePoseState):
         return 'aborted'
 
 # TODO: uuv simulator do not have services for rotation. We will have to implemented in the control system  or hardcode a solution directly to embedded
+# TODO: Describe the Transitions 
 class Rotate90DegreesState(UpdatePoseState):
     def __init__(self, group_name, debug=False):
         super(Rotate90DegreesState, self).__init__(group_name, debug)

@@ -2,7 +2,7 @@ import rospy
 import smach
 from tasks.src.movement import * 
 from enum import Enum
-import yaml
+
 
 bouy_types  = Enum('Color', ['Abyddos', 'Earth'])
 class CheckImageVisibleState(smach.State):

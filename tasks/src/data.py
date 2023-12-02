@@ -1,3 +1,11 @@
+
+import yaml
+import rospy
+from std_msgs.msg import Float32
+
+
+
+
 def read_yaml_file(file_path):
     with open(file_path, 'r') as file:
         return yaml.safe_load(file)
@@ -9,7 +17,8 @@ def read_yaml_file(file_path):
 # Class for accesing the Robots Data in the state machine
 class SharedData:
     def __init__(self):
-        self.zed_data = {}
+        #TODO: Add the 
+        self.zed_data = {"ObjectsStamped": None, "RGBDSensors": None, "Pose": None}
         self.dvl_data = None
         self.imu_data = {'yaw': None, 'pitch': None, 'roll': None}
         # Add more attributes as needed
@@ -26,8 +35,7 @@ def zed_objects_callback(msg):
     shared_data.zed_data['ObjectsStamped'] = msg
 
 def zed_rgbd_callback(msg):
-    # shared_data.zed_data[]
-    pass
+    shared_data.zed_data["RGBDSensors"] = msg
 
 def dvl_callback(msg):
     shared_data.dvl_data = msg
@@ -43,7 +51,7 @@ def pose_callback(msg):
 def initialize_subscribers(topics: str):
     topics_info = read_yaml_file(topics)
     rospy.Subscriber(topics_info['zed_camera']['ObjectsStamped'], Float32, zed_objects_callback)  # Update the message type
-    #rospy.Subscriber(topics_info['zed_camera']['rgbd_sensor'], Float32, zed_objects_callback)  # Update the message type
+    rospy.Subscriber(topics_info['zed_camera']['rgbd_sensor'], Float32, zed_objects_callback)  # Update the message type
     rospy.Subscriber(topics_info['dvl']['DVL_Message'],  dvl_callback)  # Update the message type
     rospy.Subscriber(topics_info['imu']['yaw'], imu_yaw_callback)
     rospy.Subscriber(topics_info['imu']['yaw'],  pose_callback)

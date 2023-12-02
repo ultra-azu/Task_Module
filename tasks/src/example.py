@@ -40,6 +40,6 @@ class YourStateMachine(smach.StateMachine):
 # Running the state machine
 if __name__ == '__main__':
     rospy.init_node('your_state_machine_node')
-    initialize_subscribers()
+    initialize_subscribers("config/topics_simulation.yaml")
     sm = YourStateMachine()
     outcome = sm.execute()
