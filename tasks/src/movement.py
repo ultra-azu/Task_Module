@@ -62,7 +62,7 @@ class UpdatePoseState(smach.State):
         # Call InitWaypointSet service
         try:
             # waypoints = self.generate_waypoints()
-
+            waypoints = self.WaypointFromPose()
             req = InitWaypointSetRequest()
             req.start_time = Time()  # Zero value by default
             req.start_now = True
