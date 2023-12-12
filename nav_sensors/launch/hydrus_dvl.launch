@@ -1,0 +1,17 @@
+<!-- Copyright (c) 2023 Real-Time Development Center (RTDC) Project -->
+<!-- All rights reserved. -->
+
+<!-- The following launch file will trigger the controls_system_node.py for the rexrov2 vechicle.-->
+
+<launch>
+
+  <!-- Load the dvl.yaml file that holds the ROS parameters of the Teledyne Marine RDI Doppler Velocity Logger (DVL) 
+  node and add a 'WAYFINDER' prefix to indicate the DVL type -->
+  <group ns="wayfinder">
+      <rosparam file="$(find nav_sensors)/config/dvl.yaml" />
+  </group>
+
+  <!-- Launching node: -->
+  <node name = "dvl_driver" pkg = "nav_sensors" type = "dvl_node.py" />
+
+</launch>

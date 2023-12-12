@@ -41,7 +41,7 @@
 
     <!-- Adding uuv_control_msgs as an exec dependency -->
     <exec_depend>uuv_control_msgs</exec_depend>
-
+    <build_depend>uuv_control_msgs</build_depend>
     <!-- Export tag from zed_nodelets -->
     <export>
         <nodelet plugin="${prefix}/nodelet_plugins.xml"/>
