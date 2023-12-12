@@ -25,6 +25,8 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   topic_tools
   uuv_control_msgs
+  nav_sensors
+
 )
 
 # Declare a catkin package

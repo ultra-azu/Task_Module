@@ -3,7 +3,7 @@ import yaml
 import rospy
 from std_msgs.msg import Float32
 # from uuv_sensor_ros_plugins_msgs.msg import DVL_Message
-from Hydrus.jetson-tx2.catkin_ws.src.nav_sensors import DVL_Message
+from nav_sensors.msg import DVL_MSG
 
 
 def read_yaml_file(file_path):
