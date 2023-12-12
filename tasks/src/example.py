@@ -38,17 +38,17 @@ class YourStateMachine(smach.StateMachine):
         # Implement a search for the name of the object e.g Path
         # Search for Point position 
         # Added to the Target Pose for giving it to the  StateMachine
-        self.userdata.shared_data["ObjectStamped"]
+        self.userdata.shared_data.zed_data["ObjectsStamped"]
 
 
         with self:
-            smach.StateMachine.add('move_to_object', UpdatePoseToObjectState(desired_object_name= "Abydos", edge_case_callback= lambda x: True), transitions={'success':'ANOTHER_STATE', 'aborted':'failure', 'edge_cade_detected':'FOO', "object_not_detected":"FOO"})
+            smach.StateMachine.add('move_to_object', UpdatePoseState( edge_case_callback= lambda x: True, next_state_callback = None), transitions={'success':'ANOTHER_STATE', 'aborted':'failure', 'edge_case_detected':'FOO', "object_not_detected":"FOO"})
             smach.StateMachine.add('FOO', Foo(), transitions={'success':'ANOTHER_STATE', 'aborted':''})
 
 # Running the state machine
 if __name__ == '__main__':
     rospy.init_node('your_state_machine_node')
-    file_path = os.path.join(os.path.dirname(__file__), '../config/topics_simulation.yaml')
+    file_path = os.path.join(os.path.dirname(__file__), '../../config/topics.yaml')
     initialize_subscribers(file_path)
     sm = YourStateMachine()
     outcome = sm.execute()

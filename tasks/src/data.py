@@ -4,13 +4,17 @@ import rospy
 from std_msgs.msg import Float32
 # from uuv_sensor_ros_plugins_msgs.msg import DVL_Message
 from nav_sensors.msg import DVL_MSG
+from zed_interfaces.msg import ObjectsStamped
+from zed_interfaces.msg import RGBDSensors
 
 
 def read_yaml_file(file_path):
-    with open(file_path, 'r') as file:
-        return yaml.safe_load(file)
-
-
+    with open(file_path, 'r') as stream:
+        try:
+            return yaml.safe_load(stream)
+        except yaml.YAMLError as exc:
+            print(exc)
+            return None
 
 
 
@@ -56,9 +60,15 @@ def pose_callback(msg):
 
 def initialize_subscribers(topics: str):
     topics_info = read_yaml_file(topics)
-    rospy.Subscriber(topics_info['zed_camera']['ObjectsStamped'], zed_objects_callback)  # Update the message type
-    rospy.Subscriber(topics_info['zed_camera']['RGBDSensors'], , zed_objects_callback)  # Update the message type
-    rospy.Subscriber(topics_info['dvl']['DVL_Message'],  dvl_callback)  # Update the message type
+    if topics_info is None:
+        print("Failed to read YAML file or file is empty.")
+    else:
+        print("YAML file read successfully:", topics_info)
+        print(topics_info['zed_camera']['ObjectsStamped'])
+
+    rospy.Subscriber(topics_info['zed_camera']['ObjectsStamped'],ObjectsStamped, zed_objects_callback)  # Update the message type
+    rospy.Subscriber(topics_info['zed_camera']['RGBDSensors'],RGBDSensors,  zed_rgbd_callback)  # Update the message type
+    rospy.Subscriber(topics_info['dvl']['DVL_Message'], DVL_MSG, dvl_callback)  # Update the message type
     rospy.Subscriber(topics_info['imu']['roll'],Float32, imu_roll_callback)
     rospy.Subscriber(topics_info['imu']['yaw'],Float32,  imu_yaw_callback)
     rospy.Subscriber(topics_info['imu']['pitch'],Float32 , imu_pitch_callback)

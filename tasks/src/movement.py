@@ -16,8 +16,8 @@ from robot_math import compare_poses
 
 
 class UpdatePoseState(smach.State):
-    def __init__(self, edge_case_callback,next_state_callback , pose: Pose,num_waypoints=3):
-        smach.State.__init__(self, outcomes=['success', 'edge_case_detected', 'aborted', 'preempted'],
+    def __init__(self, edge_case_callback,next_state_callback = None , pose: Pose = None,num_waypoints=3):
+        smach.State.__init__(self, outcomes=['success', 'edge_case_detected', 'aborted', 'object_not_detected'],
                              input_keys=['shared_data'],
                              output_keys=['shared_data'])
         self.edge_case_callback = edge_case_callback
@@ -62,7 +62,10 @@ class UpdatePoseState(smach.State):
         # Call InitWaypointSet service
         try:
             # waypoints = self.generate_waypoints()
-            waypoints = self.WaypointFromPose()
+            if self.pose:
+                waypoints = self.WaypointFromPose()
+            else:
+                waypoints = self.generate_waypoints()
             req = InitWaypointSetRequest()
             req.start_time = Time()  # Zero value by default
             req.start_now = True
@@ -116,7 +119,7 @@ class UpdatePoseToObjectState(UpdatePoseState):
 
     def execute(self, userdata):
         shared_data = userdata.shared_data
-        for object in  shared_data.zed_data["ObjectStamped"]:
+        for object in  shared_data.zed_data["ObjectsStamped"]:
             if self.desired_object_name == object.label:
                 self.object_data = object
 
