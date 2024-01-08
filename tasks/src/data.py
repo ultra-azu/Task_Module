@@ -58,8 +58,8 @@ def pose_callback(msg):
 
 
 
-def initialize_subscribers(topics: str):
-    topics_info = read_yaml_file(topics)
+def initialize_subscribers(topics_file):
+    topics_info = read_yaml_file(topics_file)
     if topics_info is None:
         print("Failed to read YAML file or file is empty.")
     else:

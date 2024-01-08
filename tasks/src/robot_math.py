@@ -1,7 +1,7 @@
 from geometry_msgs.msg import Pose
 import math
 
-def compare_poses(pose1: Pose, pose2: Pose, position_threshold: float, orientation_threshold: float) -> bool:
+def compare_poses(pose1, pose2, position_threshold, orientation_threshold):
     """
     Compare two poses to determine if they are similar within given thresholds.
 

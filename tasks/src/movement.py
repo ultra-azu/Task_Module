@@ -16,7 +16,7 @@ from robot_math import compare_poses
 
 
 class UpdatePoseState(smach.State):
-    def __init__(self, edge_case_callback,next_state_callback = None , pose: Pose = None,num_waypoints=3):
+    def __init__(self, edge_case_callback,next_state_callback = None , pose = None,num_waypoints=3):
         smach.State.__init__(self, outcomes=['success', 'edge_case_detected', 'aborted', 'object_not_detected'],
                              input_keys=['shared_data'],
                              output_keys=['shared_data'])
@@ -51,7 +51,7 @@ class UpdatePoseState(smach.State):
         waypoints.append(waypoint)
     
 
-    def pose_reached(self, current_pose: Pose, destination_pose: Pose, threshold: float) -> bool:
+    def pose_reached(self, current_pose, destination_pose, threshold):
         # Check if the current pose is within a certain threshold of the destination pose
         # The function 'compare_poses' should return True if the poses are similar within the threshold
         return compare_poses(current_pose, destination_pose, threshold)
@@ -110,7 +110,7 @@ class UpdatePoseToObjectState(UpdatePoseState):
         self.desired_object_name = desired_object_name
         self.object_data = None
 
-    def zedObject2Waypoint(self) -> Waypoint:
+    def zedObject2Waypoint(self):
         object_waypoint = Waypoint()
         object_waypoint.header.stamp = rospy.Time.now()
         object_waypoint.header.frame_id = "world"
