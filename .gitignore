@@ -1,1 +1,3 @@
 .vscode/
+*.pyc
+zed_camera.bag
