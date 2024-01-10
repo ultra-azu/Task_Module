@@ -5,6 +5,9 @@ zed_camera:
   image: "/zed2i/zed_node/rgb/image_rect_color"
   pose : "/zed2i/zed_node/pose"
   odom: "/zed2i/zed_node/odom"
+  path_odom: "/zed2i/zed_node/path_odom"
+  path_map: "/zed2i/zed_node/path_map"
+  
   plane_stamped: "plane"
   marker: "plane_marker"
 
