@@ -16,8 +16,8 @@ from robot_math import compare_poses
 
 
 class UpdatePoseState(smach.State):
-    def __init__(self, edge_case_callback,next_state_callback = None , pose = None,num_waypoints=3):
-        smach.State.__init__(self, outcomes=['success', 'edge_case_detected', 'aborted', 'object_not_detected'],
+    def __init__(self, edge_case_callback,next_state_callback = None , pose = None,num_waypoints=1):
+        smach.State.__init__(self, outcomes=['success', 'edge_case_detected', 'aborted'],
                              input_keys=['shared_data'],
                              output_keys=['shared_data'])
         self.edge_case_callback = edge_case_callback
@@ -27,9 +27,11 @@ class UpdatePoseState(smach.State):
         self.init_waypoint_set_service = rospy.ServiceProxy('init_waypoint_set', InitWaypointSet)
         self.pose = pose
 
-    def generate_waypoints(self):
+
+    @staticmethod
+    def generate_waypoints(num_waypoints):
         waypoints = []
-        for _ in range(self.num_waypoints):
+        for _ in range(num_waypoints):
             waypoint = Waypoint()
             waypoint.point = Point(random.uniform(-10, 10), random.uniform(-10, 10), random.uniform(-10, 10))
             waypoint.max_forward_speed = random.uniform(0, 5)
@@ -57,7 +59,8 @@ class UpdatePoseState(smach.State):
         return compare_poses(current_pose, destination_pose, threshold)
 
     def execute(self, userdata):
-        shared_data = userdata.shared_data
+        if userdata:
+            shared_data = userdata.shared_data
 
         # Call InitWaypointSet service
         try:
@@ -65,7 +68,7 @@ class UpdatePoseState(smach.State):
             if self.pose:
                 waypoints = self.WaypointFromPose()
             else:
-                waypoints = self.generate_waypoints()
+                waypoints = self.generate_waypoints(self.num_waypoints)
             req = InitWaypointSetRequest()
             req.start_time = Time()  # Zero value by default
             req.start_now = True

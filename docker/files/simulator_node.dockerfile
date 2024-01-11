@@ -36,6 +36,20 @@ RUN git clone https://github.com/uuvsimulator/desistek_saga.git
 RUN git clone https://github.com/uuvsimulator/rexrov2.git
 RUN git clone https://github.com/stereolabs/zed-ros-interfaces.git
 RUN git clone https://github.com/Rumarino-Team/Hydrus.git
+
+
+#  We add this for  solving the following issue:
+#https://github.com/uuvsimulator/uuv_simulator/issues/376
+# The solution was to add the following line to the package.xml file of uuv_simulation_evaluation
+#<build_depend>uuv_simulation_evaluation<\/build_depend>
+# https://github.com/uuvsimulator/uuv_simulation_evaluation/pull/54/files
+
+# This issue seems to happen when we install other packages  in the same workspace
+# that are not from the uuvsimulator organization.
+RUN git clone https://github.com/uuvsimulator/uuv_simulation_evaluation.git && \
+sed -i '/<buildtool_depend>catkin<\/buildtool_depend>/a \ \ <build_depend>uuv_simulation_evaluation<\/build_depend>' /root/catkin_ws/src/uuv_simulation_evaluation/uuv_smac_utils/package.xml
+
+
 # Install packages and their dependencies
 WORKDIR /root/catkin_ws
 RUN . /opt/ros/melodic/setup.sh && \

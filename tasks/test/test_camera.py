@@ -15,12 +15,12 @@ class Camera_Behaviours(unittest.TestCase):
         rospy.init_node('test_camera_node', anonymous=True)
         file_path = os.path.join(os.path.dirname(__file__), 'test_data/test_topics.yml')
         initialize_subscribers(file_path)
+        rospy.sleep(5)
         # sm = YourStateMachine()
         # outcome = sm.execute()
 
     def test_camera_input(self):
         # wait 5 seconds for data to be published
-        rospy.sleep(5)
         print("Testing Camera Input")
         self.assertIsNotNone(shared_data.zed_data['objects_stamped'])
         self.assertIsNotNone(shared_data.zed_data['imu'])

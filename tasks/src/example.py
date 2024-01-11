@@ -42,7 +42,7 @@ class YourStateMachine(smach.StateMachine):
 
 
         with self:
-            smach.StateMachine.add('move_to_object', UpdatePoseState( edge_case_callback= lambda x: True, next_state_callback = None), transitions={'success':'ANOTHER_STATE', 'aborted':'failure', 'edge_case_detected':'FOO', "object_not_detected":"FOO"})
+            smach.StateMachine.add('move_to_object', UpdatePoseState( edge_case_callback= lambda x: True, next_state_callback = None), transitions={'success':'ANOTHER_STATE', 'aborted':'failure', 'edge_case_detected':'FOO'})
             smach.StateMachine.add('FOO', Foo(), transitions={'success':'ANOTHER_STATE', 'aborted':''})
 
 # Running the state machine
