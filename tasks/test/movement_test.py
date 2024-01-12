@@ -68,6 +68,7 @@ class TestMovementsinStateMachine(unittest.TestCase):
     def reach_to_destination(self):
         #  This test check if the internal loop inside the Movement statemachine
         #  works correctly and stops when as reach its destination.
+        pass
 
 
 

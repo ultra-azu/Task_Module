@@ -115,5 +115,7 @@ TODO:
 - Keep completing and fixing documentation
 - Setup the Network 
 - Run the StateMachines in the simulation
-- 
+  - Change the way files retrieve data from yaml to ros arguments though roslaunch files.
+  - Write the Test for  the movement tasks.
+  - There is a error when executing the service that executes the movement. Maybe try the Go_to service. Because the InitWaypointset is not avaible when running the rexrov2 simulation. Maybe trying the Desistek if it works??? Need to test that.
 

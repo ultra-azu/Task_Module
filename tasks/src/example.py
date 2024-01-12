@@ -16,14 +16,12 @@ DEFINE YOUR CUSTOM STATES IN HERE IF NECESSARY
 # Define state Foo
 class Foo(smach.State):
     def __init__(self):
-        smach.State.__init__(self, outcomes=['try_again'])
+        smach.State.__init__(self, outcomes=['failure'])
 
     def execute(self, userdata):
         print("Try Again to detect object")
-        return "try_again"
+        return "failure"
     
-
-posicion = Pose()
 
 
 
@@ -38,12 +36,12 @@ class YourStateMachine(smach.StateMachine):
         # Implement a search for the name of the object e.g Path
         # Search for Point position 
         # Added to the Target Pose for giving it to the  StateMachine
-        self.userdata.shared_data.zed_data["ObjectsStamped"]
+        self.userdata.shared_data.zed_data["objects_stamped"]
 
 
         with self:
-            smach.StateMachine.add('move_to_object', UpdatePoseState( edge_case_callback= lambda x: True, next_state_callback = None), transitions={'success':'ANOTHER_STATE', 'aborted':'failure', 'edge_case_detected':'FOO'})
-            smach.StateMachine.add('FOO', Foo(), transitions={'success':'ANOTHER_STATE', 'aborted':''})
+            smach.StateMachine.add('move_to_object', UpdatePoseState( edge_case_callback= lambda x: True, next_state_callback = None), transitions={'success':'success', 'aborted':'failure', 'edge_case_detected':'failure'})
+
 
 # Running the state machine
 if __name__ == '__main__':

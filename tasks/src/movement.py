@@ -14,6 +14,8 @@ from uuv_control_msgs.srv import InitWaypointSet, InitWaypointSetRequest
 from uuv_control_msgs.msg import Waypoint
 import math
 import tf
+from data import read_yaml_file
+import os
 
 
 class UpdatePoseState(smach.State):
@@ -24,9 +26,12 @@ class UpdatePoseState(smach.State):
         self.edge_case_callback = edge_case_callback
         self.next_state_callback = next_state_callback
         self.num_waypoints = num_waypoints
-        self.init_waypoint_set_service = rospy.ServiceProxy('init_waypoint_set', InitWaypointSet)
         self.pose = pose
         self.threshold = 0.05
+
+        # read from the config file the services
+        services_topics = read_yaml_file(os.path.join(os.path.dirname(__file__), '../../config/topics.yaml'))
+        self.init_waypoint_set_service = rospy.ServiceProxy(services_topics["uuv_control_services"]["setWaypoints"], InitWaypointSet)
 
 
     @staticmethod
@@ -55,14 +60,16 @@ class UpdatePoseState(smach.State):
         return waypoints
     
     @staticmethod
-    def pose_reached(self, current_pose, destination_pose, threshold):
+    def pose_reached( current_pose, destination_pose, threshold):
         # Check if the current pose is within a certain threshold of the destination pose
         # The function 'compare_poses' should return True if the poses are similar within the threshold
          # Calculate position difference
+        current_pose.pose.position.x
+        destination_pose.position.x
         position_diff = math.sqrt(
-                (current_pose.position.x - destination_pose.position.x) ** 2 +
-                (current_pose.position.y - destination_pose.position.y) ** 2 +
-                (current_pose.position.z - destination_pose.position.z) ** 2
+                (current_pose.pose.x - destination_pose.position.x) ** 2 +
+                (current_pose.pose.position.y - destination_pose.position.y) ** 2 +
+                (current_pose.pose.position.z - destination_pose.position.z) ** 2
             )
 
             # Calculate orientation difference (simple method, more complex calculations may involve quaternions)
@@ -103,7 +110,7 @@ class UpdatePoseState(smach.State):
         while not rospy.is_shutdown():
 
             # Check if the destination has been reached
-            if self.pose_reached(userdata.shared_data.current_pose,waypoints[0].point, threshold=self.threshold):
+            if self.pose_reached(userdata.shared_data.zed_data["pose"],waypoints[0].point, threshold=self.threshold):
                 rospy.loginfo("Destination has been reached.")
                 return 'success'
 
@@ -119,12 +126,10 @@ class UpdatePoseState(smach.State):
 
 
     def execute(self, userdata):
-        if userdata:
-            shared_data = userdata.shared_data
 
         waypoints = self.generate_waypoints(self.num_waypoints)
         self.call_movement(waypoints)
-        return self.loop_monitor(userdata)
+        return self.loop_monitor(userdata, waypoints)
 
 
 
@@ -162,7 +167,7 @@ class UpdatePoseToObjectState(UpdatePoseState):
             return "object_not_detected"
 
         self.call_movement()
-        return self.loop_monitor(userdata)
+        return self.loop_monitor(userdata, self.waypoints)
 
 
 
