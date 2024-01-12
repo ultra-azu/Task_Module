@@ -12,7 +12,8 @@ from std_msgs.msg import Time
 from geometry_msgs.msg import Point
 from uuv_control_msgs.srv import InitWaypointSet, InitWaypointSetRequest
 from uuv_control_msgs.msg import Waypoint
-from robot_math import compare_poses
+import math
+import tf
 
 
 class UpdatePoseState(smach.State):
@@ -23,9 +24,9 @@ class UpdatePoseState(smach.State):
         self.edge_case_callback = edge_case_callback
         self.next_state_callback = next_state_callback
         self.num_waypoints = num_waypoints
-        self.waypoints = []
         self.init_waypoint_set_service = rospy.ServiceProxy('init_waypoint_set', InitWaypointSet)
         self.pose = pose
+        self.threshold = 0.05
 
 
     @staticmethod
@@ -41,7 +42,7 @@ class UpdatePoseState(smach.State):
             waypoints.append(waypoint)
         return waypoints
     
-
+    @staticmethod
     def WaypointFromPose(self):
         waypoints = []
         waypoint = Waypoint()
@@ -51,24 +52,33 @@ class UpdatePoseState(smach.State):
         waypoint.use_fixed_heading = random.choice([True, False])
         waypoint.radius_of_acceptance = random.uniform(0, 5)
         waypoints.append(waypoint)
+        return waypoints
     
-
+    @staticmethod
     def pose_reached(self, current_pose, destination_pose, threshold):
         # Check if the current pose is within a certain threshold of the destination pose
         # The function 'compare_poses' should return True if the poses are similar within the threshold
-        return compare_poses(current_pose, destination_pose, threshold)
+         # Calculate position difference
+        position_diff = math.sqrt(
+                (current_pose.position.x - destination_pose.position.x) ** 2 +
+                (current_pose.position.y - destination_pose.position.y) ** 2 +
+                (current_pose.position.z - destination_pose.position.z) ** 2
+            )
 
-    def execute(self, userdata):
-        if userdata:
-            shared_data = userdata.shared_data
+            # Calculate orientation difference (simple method, more complex calculations may involve quaternions)
+        orientation_diff = math.sqrt(
+                (current_pose.orientation.x - destination_pose.orientation.x) ** 2 +
+                (current_pose.orientation.y - destination_pose.orientation.y) ** 2 +
+                (current_pose.orientation.z - destination_pose.orientation.z) ** 2 +
+                (current_pose.orientation.w - destination_pose.orientation.w) ** 2
+            )
 
+        return position_diff <= threshold and orientation_diff <= threshold
+
+
+    def call_movement(self, waypoints):
         # Call InitWaypointSet service
         try:
-            # waypoints = self.generate_waypoints()
-            if self.pose:
-                waypoints = self.WaypointFromPose()
-            else:
-                waypoints = self.generate_waypoints(self.num_waypoints)
             req = InitWaypointSetRequest()
             req.start_time = Time()  # Zero value by default
             req.start_now = True
@@ -76,20 +86,24 @@ class UpdatePoseState(smach.State):
             req.max_forward_speed = 1.5
             req.heading_offset = 0.0
             req.interpolator = 'linear'
-
             response = self.init_waypoint_set_service(req)
+            rospy.loginfo("InitWaypointSet service called.", response)
+
             if not response.success:
                 rospy.logerr("Failed to initiate InitWaypointSet service.")
                 return 'aborted'
         except rospy.ServiceException as e:
             rospy.logerr("Service call failed: %s" % e)
             return 'aborted'
+        
 
-         # Monitoring loop
+    def loop_monitor(self, userdata, waypoints):
+        shared_data = userdata.shared_data
+        # Monitoring loop
         while not rospy.is_shutdown():
 
             # Check if the destination has been reached
-            if self.pose_reached(userdata.shared_data.current_pose, self.zedObject2Waypoint().point, threshold=YOUR_DEFINED_THRESHOLD):
+            if self.pose_reached(userdata.shared_data.current_pose,waypoints[0].point, threshold=self.threshold):
                 rospy.loginfo("Destination has been reached.")
                 return 'success'
 
@@ -103,6 +117,19 @@ class UpdatePoseState(smach.State):
         return 'aborted'
 
 
+
+    def execute(self, userdata):
+        if userdata:
+            shared_data = userdata.shared_data
+
+        waypoints = self.generate_waypoints(self.num_waypoints)
+        self.call_movement(waypoints)
+        return self.loop_monitor(userdata)
+
+
+
+
+         
 class UpdatePoseToObjectState(UpdatePoseState):
     def __init__(self, desired_object_name, edge_case_callback,next_state_callback ):
         super(UpdatePoseToObjectState, self).__init__(outcomes=['success', 'edge_case_detected', 'aborted', "object_not_detected"],
@@ -134,52 +161,39 @@ class UpdatePoseToObjectState(UpdatePoseState):
             # Failed to identify object
             return "object_not_detected"
 
-        # Prepare and call InitWaypointSet service
-        try:
-            req = InitWaypointSetRequest()
-            req.start_time = Time()  # Zero value by default
-            req.start_now = True
-            req.waypoints = self.waypoints
-            req.max_forward_speed = 1.5
-            req.heading_offset = 0.0
-            req.interpolator = 'linear'
+        self.call_movement()
+        return self.loop_monitor(userdata)
 
-            response = self.init_waypoint_set_service(req)
-            if not response.success:
-                rospy.logerr("Failed to initiate InitWaypointSet service.")
-                return 'aborted'
-        except rospy.ServiceException as e:
-            rospy.logerr("Service call failed: %s" % e)
-            return 'aborted'
-        
 
-        # Monitoring loop
-        while not rospy.is_shutdown():
 
-            # Check if the destination has been reached
-            if self.pose_reached(userdata.shared_data.current_pose, self.zedObject2Waypoint().point, threshold=10):
-                rospy.loginfo("Destination has been reached.")
-                return 'success'
-
-            if self.edge_case_callback(shared_data):
-                rospy.logwarn("Edge case detected, transitioning to handle situation.")
-                userdata.edge_case = self.next_state_callback()
-                return "edge_case_detected"
-
-            rospy.sleep(0.1)  # Sleep to prevent a busy loop, adjust as needed
-
-        return 'aborted'
-
-# TODO: uuv simulator do not have services for rotation. We will have to implemented in the control system  or hardcode a solution directly to embedded
-# TODO: Describe the Transitions 
 class Rotate90DegreesState(UpdatePoseState):
-    def __init__(self, group_name, debug=False):
-        super(Rotate90DegreesState, self).__init__(group_name, debug)
-        pass
+    def __init__(self, edge_case_callback,next_state_callback ):
+        super(Rotate90DegreesState, self).__init__(outcomes=['success', 'edge_case_detected', 'aborted', "object_not_detected"],
+                                                      input_keys=['shared_data'],
+                                                      output_keys=['edge_case'],
+                                                 edge_case_callback=edge_case_callback,
+                                                   next_state_callback=next_state_callback)
+
 
     def execute(self, userdata):
-        pass
-        
+        current_pose = userdata.shared_data.current_pose
+        waypoint = Waypoint()
+        waypoint.header.stamp = rospy.Time.now()
+        waypoint.header.frame_id = "world"
+        waypoint.point.x = current_pose.position.x
+        waypoint.point.y = current_pose.position.y
+        waypoint.point.z = current_pose.position.z
+        quaternion = tf.transformations.quaternion_from_euler(0, 0, math.pi/2)
+        waypoint.orientation.x = quaternion[0]
+        waypoint.orientation.y = quaternion[1] 
+        waypoint.orientation.z = quaternion[2]
+        waypoint.orientation.w = quaternion[3]
+
+        self.waypoints = [waypoint] 
+        self.call_movement(self.waypoints)
+        return self.loop_monitor(userdata)
+
+
 
 class HoldPositionTask(smach.State):
     """Hold position at the place the robot is at the first time this runs"""
