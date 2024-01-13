@@ -9,6 +9,7 @@ from nav_sensors.msg import DVL_MSG
 from rospy.exceptions import ROSException
 
 
+
 def read_yaml_file(file_path):
     with open(file_path, 'r') as stream:
         try:
@@ -28,7 +29,7 @@ class SharedData:
         # Add more attributes as needed
 
         # Match simulation Pose
-        self.pose = None
+        self.submarine_pose = None
 
 
 
@@ -81,37 +82,13 @@ def imu_roll_callback(msg):
 
 #############################
     # Calculated Pose
-#Either Simulation or  real IMU calculation
+#Either Simulation or  real IMU calculation or Zed_Camera pose
 def pose_callback(msg):
-    shared_data.pose = msg
+    shared_data.submarine_pose = msg
 
 ###############################
 
 
-
-
-# Initialize subscribers
-def initialize_subscribers(topics_file):
-    topics_info = read_yaml_file(topics_file)
-    if topics_info is None:
-        rospy.logerr("Failed to read YAML file or file is empty.")
-    else:
-        rospy.loginfo("YAML file read successfully.")
-
-        # Zed Camera Subscribers
-        rospy.Subscriber(topics_info['zed_camera']['objects_stamped'], ObjectsStamped, zed_objects_callback)
-        rospy.Subscriber(topics_info['zed_camera']['camera_info'], CameraInfo, zed_camera_info_callback)
-        rospy.Subscriber(topics_info['zed_camera']['imu'], Imu, zed_imu_callback)
-        rospy.Subscriber(topics_info['zed_camera']['image'], Image, zed_image_callback)
-        rospy.Subscriber(topics_info['zed_camera']['pose'], PoseStamped, zed_pose_callback)
-        rospy.Subscriber(topics_info['zed_camera']['odom'], Odometry, zed_odom_callback)
-        rospy.Subscriber(topics_info['zed_camera']['path_odom'], Path, zed_path_odom_callback)
-        rospy.Subscriber(topics_info['zed_camera']['path_map'], Path, zed_path_map_callback)
-
-        rospy.Subscriber(topics_info['dvl']['DVL_Message'], DVL_MSG, dvl_callback)  # Update the message type
-        rospy.Subscriber(topics_info['imu']['roll'],Float32, imu_roll_callback)
-        rospy.Subscriber(topics_info['imu']['yaw'],Float32,  imu_yaw_callback)
-        rospy.Subscriber(topics_info['imu']['pitch'],Float32 , imu_pitch_callback)
 
 
 # Initialize subscribers
@@ -138,8 +115,11 @@ def initialize_subscribers(topics_file):
     rospy.Subscriber(topics_info['imu']['yaw'], Float32, imu_yaw_callback)
     rospy.Subscriber(topics_info['imu']['pitch'], Float32, imu_pitch_callback)
 
+
+    rospy.Subscriber("/rexrov2/pose_gt", Odometry, pose_callback)
+
     #wait 5 seconds for the subscribers to get the first message
-    rospy.sleep(6)
+    rospy.sleep(5)
     # Check if any of the subscribed data is still None
     data_sources = [
         ('zed_objects_stamped', shared_data.zed_data['objects_stamped']),
@@ -150,6 +130,7 @@ def initialize_subscribers(topics_file):
         ('zed_odom', shared_data.zed_data['odom']),
         ('zed_path_odom', shared_data.zed_data['path_odom']),
         ('zed_path_map', shared_data.zed_data['path_map']),
+        ('submarine_pose', shared_data.submarine_pose),
         # ('dvl_data', shared_data.dvl_data),
         # ('imu_yaw', shared_data.imu_data['yaw']),
         # ('imu_pitch', shared_data.imu_data['pitch']),

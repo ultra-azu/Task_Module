@@ -10,7 +10,7 @@ import smach
 import random
 from std_msgs.msg import Time
 from geometry_msgs.msg import Point
-from uuv_control_msgs.srv import InitWaypointSet, InitWaypointSetRequest
+from uuv_control_msgs.srv import InitWaypointSet, InitWaypointSetRequest, GoTo, GoToRequest
 from uuv_control_msgs.msg import Waypoint
 import math
 import tf
@@ -33,7 +33,7 @@ class UpdatePoseState(smach.State):
         # read from the config file the services
         services_topics = read_yaml_file(os.path.join(os.path.dirname(__file__), '../../config/topics.yaml'))
         self.init_waypoint_set_service = rospy.ServiceProxy(services_topics["uuv_control_services"]["init_waypoints"], InitWaypointSet)
-
+        self.goto_service = rospy.ServiceProxy(services_topics["uuv_control_services"]["GoTo"], GoTo)
 
     @staticmethod
     def generate_waypoints(num_waypoints):
@@ -99,10 +99,8 @@ class UpdatePoseState(smach.State):
             req.waypoints = waypoints
             req.max_forward_speed = 1.5
             req.heading_offset = 0.0
-            req.interpolator = String(data='linear') 
             response = self.init_waypoint_set_service(req)
             rospy.loginfo("InitWaypointSet service called.")
-
             if not response.success:
                 rospy.logerr("Failed to initiate InitWaypointSet service.")
                 return 'aborted'
@@ -110,6 +108,21 @@ class UpdatePoseState(smach.State):
             rospy.logerr("Service call failed: %s" % e)
             return 'aborted'
         
+    def call_goto_movement(self, waypoint):
+        # Call the GoTo service
+        try:
+            req = GoToRequest()
+            req.waypoint = waypoint
+            req.max_forward_speed = 1.5
+            response = self.goto_service(req)  # Replace with your service proxy name
+            rospy.loginfo("GoTo service called.")
+
+            if not response.success:
+                rospy.logerr("Failed to initiate GoTo service.")
+                return 'aborted'
+        except rospy.ServiceException as e:
+            rospy.logerr("Service call failed: %s" % e)
+            return 'aborted'
 
     def loop_monitor(self, userdata, waypoints):
         shared_data = userdata.shared_data
@@ -117,7 +130,7 @@ class UpdatePoseState(smach.State):
         while not rospy.is_shutdown():
 
             # Check if the destination has been reached
-            if self.pose_reached(userdata.shared_data.zed_data["pose"],waypoints[0], threshold=self.threshold):
+            if self.pose_reached(userdata.shared_data.submarine_pose["pose"],waypoints[0], threshold=self.threshold):
                 rospy.loginfo("Destination has been reached.")
                 return 'success'
 
@@ -136,7 +149,7 @@ class UpdatePoseState(smach.State):
 
         waypoints = self.generate_waypoints(self.num_waypoints)
         print(waypoints)
-        self.call_movement(waypoints)
+        self.call_goto_movement(waypoints[0])
         return self.loop_monitor(userdata, waypoints)
 
 
@@ -211,7 +224,7 @@ class Rotate90DegreesState(UpdatePoseState):
 class HoldPositionTask(smach.State):
     """Hold position at the place the robot is at the first time this runs"""
 
-    def __init__(self, time_to_hold, hold_server_topic):
+    def __init__(self, time_to_hold):
         """
         Parameters:
             time_to_hold (int): Duration to hold the position in seconds
