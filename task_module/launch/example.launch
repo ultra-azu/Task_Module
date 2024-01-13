@@ -1,0 +1,27 @@
+<!-- A file for testing the example.py state machine -->
+
+<launch>
+    <!-- Define arguments (optional) -->
+    <arg name="teleop_on" default="true"/>
+    <arg name="joy_id" default="0"/>
+
+    <!-- Include the start_demo_pid_controller.launch file -->
+    <include file="$(find rexrov2_gazebo)/launch/start_demo_pid_controller.launch">
+        <arg name="teleop_on" value="$(arg teleop_on)"/>
+        <arg name="joy_id" value="$(arg joy_id)"/>
+    </include>
+
+    <!-- Enable the recorded data  rosbag from the zed camera -->
+    <node name="rosbag_play" pkg="rosbag" type="play" args="-l $(find tasks)/test/test_data/zed_camera.bag" />
+
+
+    <!-- Enable the recorded data from the IMU and DVL -->
+    <!-- I don't have the DVL with me so the DVL has to wait a little bit :V -->
+
+    <!-- Enable the example.py State Machine -->
+    <node name="example_node" pkg="tasks" type="example.py" output="screen" cwd="node"></node>
+
+
+
+
+</launch>

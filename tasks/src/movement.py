@@ -16,6 +16,7 @@ import math
 import tf
 from data import read_yaml_file
 import os
+from std_msgs.msg import String
 
 
 class UpdatePoseState(smach.State):
@@ -31,7 +32,7 @@ class UpdatePoseState(smach.State):
 
         # read from the config file the services
         services_topics = read_yaml_file(os.path.join(os.path.dirname(__file__), '../../config/topics.yaml'))
-        self.init_waypoint_set_service = rospy.ServiceProxy(services_topics["uuv_control_services"]["setWaypoints"], InitWaypointSet)
+        self.init_waypoint_set_service = rospy.ServiceProxy(services_topics["uuv_control_services"]["init_waypoints"], InitWaypointSet)
 
 
     @staticmethod
@@ -65,22 +66,28 @@ class UpdatePoseState(smach.State):
         # The function 'compare_poses' should return True if the poses are similar within the threshold
          # Calculate position difference
         current_pose.pose.position.x
-        destination_pose.position.x
+        destination_pose.point.x
         position_diff = math.sqrt(
-                (current_pose.pose.x - destination_pose.position.x) ** 2 +
-                (current_pose.pose.position.y - destination_pose.position.y) ** 2 +
-                (current_pose.pose.position.z - destination_pose.position.z) ** 2
+                (current_pose.pose.position.x - destination_pose.point.x) ** 2 +
+                (current_pose.pose.position.y - destination_pose.point.y) ** 2 +
+                (current_pose.pose.position.z - destination_pose.point.z) ** 2
             )
+        
+        # TODO: Currently waypoints do not have an orientation data. Meaning that  we do not control that for now
+                # To implement that we will need to chage the dp_controller.py file to include the orientation data.
+                # and make a custom service and meesage for that information.
+        
 
+        
             # Calculate orientation difference (simple method, more complex calculations may involve quaternions)
-        orientation_diff = math.sqrt(
-                (current_pose.orientation.x - destination_pose.orientation.x) ** 2 +
-                (current_pose.orientation.y - destination_pose.orientation.y) ** 2 +
-                (current_pose.orientation.z - destination_pose.orientation.z) ** 2 +
-                (current_pose.orientation.w - destination_pose.orientation.w) ** 2
-            )
+        # orientation_diff = math.sqrt(
+        #         (current_pose.orientation.x - destination_pose.orientation.x) ** 2 +
+        #         (current_pose.orientation.y - destination_pose.orientation.y) ** 2 +
+        #         (current_pose.orientation.z - destination_pose.orientation.z) ** 2 +
+        #         (current_pose.orientation.w - destination_pose.orientation.w) ** 2
+        #     )
 
-        return position_diff <= threshold and orientation_diff <= threshold
+        return position_diff <= threshold  #and orientation_diff <= threshold
 
 
     def call_movement(self, waypoints):
@@ -92,9 +99,9 @@ class UpdatePoseState(smach.State):
             req.waypoints = waypoints
             req.max_forward_speed = 1.5
             req.heading_offset = 0.0
-            req.interpolator = 'linear'
+            req.interpolator = String(data='linear') 
             response = self.init_waypoint_set_service(req)
-            rospy.loginfo("InitWaypointSet service called.", response)
+            rospy.loginfo("InitWaypointSet service called.")
 
             if not response.success:
                 rospy.logerr("Failed to initiate InitWaypointSet service.")
@@ -110,16 +117,16 @@ class UpdatePoseState(smach.State):
         while not rospy.is_shutdown():
 
             # Check if the destination has been reached
-            if self.pose_reached(userdata.shared_data.zed_data["pose"],waypoints[0].point, threshold=self.threshold):
+            if self.pose_reached(userdata.shared_data.zed_data["pose"],waypoints[0], threshold=self.threshold):
                 rospy.loginfo("Destination has been reached.")
                 return 'success'
 
             if self.edge_case_callback(shared_data):
                 rospy.logwarn("Edge case detected, transitioning to handle situation.")
-                userdata.edge_case = self.next_state_callback()
                 return "edge_case_detected"
 
             rospy.sleep(0.1)  # Sleep to prevent a busy loop, adjust as needed
+            print("Monitoring loop")
 
         return 'aborted'
 
@@ -128,6 +135,7 @@ class UpdatePoseState(smach.State):
     def execute(self, userdata):
 
         waypoints = self.generate_waypoints(self.num_waypoints)
+        print(waypoints)
         self.call_movement(waypoints)
         return self.loop_monitor(userdata, waypoints)
 

@@ -27,4 +27,4 @@ imu:
 uuv_control_services:
   GoTo: "/your_goto_service"
   Hold: "/rexrov2/hold_vehicle"
-  init_waypo: "/rexrov2/start_waypoint_list"
+  init_waypoints: "/rexrov2/start_waypoint_list"
