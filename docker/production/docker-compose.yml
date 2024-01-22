@@ -6,3 +6,43 @@
 
 
 
+version: '3'
+
+services:
+  simulator_node:
+    build:
+      context: .
+      dockerfile: simulator_node.dockerfile
+    environment:
+      - DISPLAY=$DISPLAY
+      - LIBGL_ALWAYS_INDIRECT=1
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility,graphics
+      - ROS_MASTER_URI=http://master:11311
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix
+    # privileged: true
+    # stdin_open: true
+    tty: true
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+    rosserial:
+      build:
+        context: .
+        dockerfile: rosserial.dockerfile
+
+      privileged: true
+      stdin_open: true
+      tty: true
+      volumes:
+        - /Put the ROS Noetic Volume
+      devices:
+        - "/dev/ttyACM0:/dev/ttyACM0"
+
+      environment:
+        - ARDUINO_BOARD=arduino:avr:uno

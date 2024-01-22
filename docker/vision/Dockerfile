@@ -22,11 +22,9 @@ RUN chmod +x /opencv.sh
 RUN /opencv.sh
 
 ADD ./tensorrt_inference.sh /tensorrt_inference.sh
-ADD ./0001-Use-yaml-cpp-cmake-package.patch /0001-Use-yaml-cpp-cmake-package.patch
 RUN chmod +x /tensorrt_inference.sh
 RUN /tensorrt_inference.sh
 
-ADD ./0001-WIP-Add-missing-package-dependencies.patch /0001-WIP-Add-missing-package-dependencies.patch
 ADD ./ros-environment.sh /ros-environment.sh
 RUN chmod +x /ros-environment.sh
 RUN /ros-environment.sh

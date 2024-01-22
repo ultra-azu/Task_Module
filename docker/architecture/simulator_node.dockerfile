@@ -6,8 +6,6 @@ RUN apt update && apt install -y\
  ros-melodic-smach-ros\
  ros-melodic-executive-smach\
  ros-melodic-smach-viewer\
- ros-melodic-moveit\
- ros-melodic-moveit-visual-tools\
  vim\
  nano\
  python-rosdep\
