@@ -1,0 +1,8 @@
+# This is going to be the production ready docker-compose file
+# The dockerfiles in production are going to be different because
+# we are going to put some dependencies in a outside docker volume
+# in a flash drive and Depedencies from the local host like the CUDA
+# library.
+
+
+
