@@ -116,7 +116,7 @@ def initialize_subscribers(topics_file):
     rospy.Subscriber(topics_info['imu']['pitch'], Float32, imu_pitch_callback)
 
 
-    rospy.Subscriber("/rexrov2/pose_gt", Odometry, pose_callback)
+    rospy.Subscriber(topics_info['submarine_pose']['pose'], Odometry, pose_callback)
 
     #wait 5 seconds for the subscribers to get the first message
     rospy.sleep(5)

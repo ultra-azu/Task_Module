@@ -4,7 +4,7 @@ from uuv_control_msgs.srv import GoTo, GoToRequest
 from geometry_msgs.msg import Pose, PoseStamped, Point
 from uuv_control_msgs.msg import Waypoint
 from uuv_control_msgs.srv import Hold, HoldRequest
-
+from geometry_msgs.msg import PoseWithCovariance 
 import rospy
 import smach
 import random
@@ -17,10 +17,12 @@ import tf
 from data import read_yaml_file
 import os
 from std_msgs.msg import String
+from nav_msgs.msg import Odometry
 
 
 class UpdatePoseState(smach.State):
-    def __init__(self, edge_case_callback,next_state_callback = None , pose = None,num_waypoints=1):
+    def __init__(self,  edge_case_callback,next_state_callback = None ,num_waypoints=1, pose = None ,threshold = 1.2,
+                         speed = 2.0, heading_offset = 0.1, fixed_heading = False,radius_of_acceptance  = 0.5,):
         smach.State.__init__(self, outcomes=['success', 'edge_case_detected', 'aborted'],
                              input_keys=['shared_data'],
                              output_keys=['shared_data'])
@@ -28,7 +30,12 @@ class UpdatePoseState(smach.State):
         self.next_state_callback = next_state_callback
         self.num_waypoints = num_waypoints
         self.pose = pose
-        self.threshold = 0.05
+        self.threshold = threshold
+        self.speed = speed
+        self.heading_offset = heading_offset
+        self.fixed_heading = fixed_heading
+        self.radius_of_acceptance = radius_of_acceptance
+
 
         # read from the config file the services
         services_topics = read_yaml_file(os.path.join(os.path.dirname(__file__), '../../config/topics.yaml'))
@@ -40,23 +47,22 @@ class UpdatePoseState(smach.State):
         waypoints = []
         for _ in range(num_waypoints):
             waypoint = Waypoint()
-            waypoint.point = Point(random.uniform(-10, 10), random.uniform(-10, 10), random.uniform(-10, 10))
+            waypoint.point = Point(random.uniform(-10, 10), random.uniform(-10, 10), random.uniform(-20, -10))
             waypoint.max_forward_speed = random.uniform(0, 5)
             waypoint.heading_offset = random.uniform(-3.14, 3.14)
             waypoint.use_fixed_heading = random.choice([True, False])
-            waypoint.radius_of_acceptance = random.uniform(0, 5)
+            waypoint.radius_of_acceptance = random.uniform(0, 1)
             waypoints.append(waypoint)
         return waypoints
-    
     @staticmethod
-    def WaypointFromPose(self):
+    def WaypointFromPose(pose, speed, heading_offset, fixed_heading, radius_of_acceptance):
         waypoints = []
         waypoint = Waypoint()
-        waypoint.point = self.pose.point
-        waypoint.max_forward_speed = random.uniform(0, 5)
-        waypoint.heading_offset = random.uniform(-3.14, 3.14)
-        waypoint.use_fixed_heading = random.choice([True, False])
-        waypoint.radius_of_acceptance = random.uniform(0, 5)
+        waypoint.point = pose.point
+        waypoint.max_forward_speed = speed
+        waypoint.heading_offset = heading_offset
+        waypoint.use_fixed_heading = fixed_heading
+        waypoint.radius_of_acceptance = radius_of_acceptance
         waypoints.append(waypoint)
         return waypoints
     
@@ -64,13 +70,21 @@ class UpdatePoseState(smach.State):
     def pose_reached( current_pose, destination_pose, threshold):
         # Check if the current pose is within a certain threshold of the destination pose
         # The function 'compare_poses' should return True if the poses are similar within the threshold
-         # Calculate position difference
-        current_pose.pose.position.x
+        # print("current_pose",current_pose)
+        print(destination_pose)
+
+        if not isinstance(current_pose, Odometry):
+            rospy.logerr("current_pose must be an instance of Odometry")
+
+        if not isinstance(destination_pose, Waypoint):
+            rospy.logerr("destination_pose must be an instance of Waypoint")
+
+        current_pose.pose.pose.position.x
         destination_pose.point.x
         position_diff = math.sqrt(
-                (current_pose.pose.position.x - destination_pose.point.x) ** 2 +
-                (current_pose.pose.position.y - destination_pose.point.y) ** 2 +
-                (current_pose.pose.position.z - destination_pose.point.z) ** 2
+                (current_pose.pose.pose.position.x - destination_pose.point.x) ** 2 +
+                (current_pose.pose.pose.position.y - destination_pose.point.y) ** 2 +
+                (current_pose.pose.pose.position.z - destination_pose.point.z) ** 2
             )
         
         # TODO: Currently waypoints do not have an orientation data. Meaning that  we do not control that for now
@@ -130,7 +144,7 @@ class UpdatePoseState(smach.State):
         while not rospy.is_shutdown():
 
             # Check if the destination has been reached
-            if self.pose_reached(userdata.shared_data.submarine_pose["pose"],waypoints[0], threshold=self.threshold):
+            if self.pose_reached(userdata.shared_data.submarine_pose ,waypoints[0], threshold=self.threshold):
                 rospy.loginfo("Destination has been reached.")
                 return 'success'
 
@@ -148,8 +162,12 @@ class UpdatePoseState(smach.State):
     def execute(self, userdata):
 
         waypoints = self.generate_waypoints(self.num_waypoints)
-        print(waypoints)
-        self.call_goto_movement(waypoints[0])
+        # print(waypoints)
+        # waypoints = UpdatePoseState.WaypointFromPose( self.pose,  self.speed,self.heading_offset, 
+        #                                                     self.radius_of_acceptance)
+        result = self.call_goto_movement(waypoints[0])
+        if result == 'aborted':
+            return result
         return self.loop_monitor(userdata, waypoints)
 
 

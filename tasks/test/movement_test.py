@@ -22,21 +22,23 @@ class TestBasicMovementMachine(smach.StateMachine):
     def __init__(self):
         smach.StateMachine.__init__(self, outcomes=['success', 'failure'])
         with self:
-            smach.StateMachine.add('move', UpdatePoseState( edge_case_callback= lambda x: True, next_state_callback = None), transitions={'success':'ANOTHER_STATE', 'aborted':'failure', 'edge_case_detected':'failure'})
+            smach.StateMachine.add('move', UpdatePoseState( edge_case_callback= lambda x: True, next_state_callback = None), transitions={'success':'success', 'aborted':'failure', 'edge_case_detected':'failure'})
 
 
-class TestObjectMovementMachine(smach.StateMachine):
+class TestReachDestinationMachine(smach.StateMachine):
     def __init__(self):
         smach.StateMachine.__init__(self, outcomes=['success', 'failure'])
         with self:
-            smach.StateMachine.add('move', UpdatePoseState( edge_case_callback= lambda x: True, next_state_callback = None), transitions={'success':'ANOTHER_STATE', 'aborted':'failure', 'edge_case_detected':'failure'})
+            smach.StateMachine.add('move', UpdatePoseState( edge_case_callback= lambda x: False, next_state_callback = None, pose= Pose(position=Point(x=1,y=1,z=1))),
+                                                             speed= 1.0, heading_offset= 0.1, fixed_heading= False, radius_of_acceptance = 0.5), 
+                                   transitions={'success':'success', 'aborted':'failure', 'edge_case_detected':'failure'})
 
 
 class TestRotationMachine(smach.StateMachine):
     def __init__(self):
         smach.StateMachine.__init__(self, outcomes=['success', 'failure'])
         with self:
-            smach.StateMachine.add('move', UpdatePoseState( edge_case_callback= lambda x: True, next_state_callback = None), transitions={'success':'ANOTHER_STATE', 'aborted':'failure', 'edge_case_detected':'failure'})
+            smach.StateMachine.add('move', UpdatePoseState( edge_case_callback= lambda x: True, next_state_callback = None), transitions={'success':'success', 'aborted':'failure', 'edge_case_detected':'failure'})
 
 ##########################################################
 #Singleton States Machines for Testing individual States#*
@@ -49,26 +51,26 @@ class TestMovementsinStateMachine(unittest.TestCase):
         rospy.init_node('your_state_machine_node')
         file_path = os.path.join(os.path.dirname(__file__), 'test_data/test_topics.yml')
         initialize_subscribers(file_path)
-        sm = YourStateMachine()
-        outcome = sm.execute()
 
 
-    # def setUp(self):
-    #     self.state = UpdatePoseState( edge_case_callback= lambda x: True, next_state_callback = None)
-    #     self.random_waypoints = self.state.generate_waypoints(1)
-    #     self.waypoint_1 = self.random_waypoints[0]
 
     def controls_movement_simulation(self):
         #  This should test wheter it makes a substational movement to see wheter 
         #  The movement command from the controls systems works acoordingly.
         self.state.execute()
         self.assertTrue(True)
+        sm = YourStateMachine()
+        outcome = sm.execute()
 
 
     def reach_to_destination(self):
         #  This test check if the internal loop inside the Movement statemachine
         #  works correctly and stops when as reach its destination.
-        pass
+
+        sm = TestReachDestinationMachine()
+        outcome = sm.execute()
+
+        self.assertEqual(outcome,'success')
 
 
 
