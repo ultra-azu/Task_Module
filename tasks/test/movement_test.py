@@ -12,6 +12,7 @@ import os
 import smach
 
 
+
 from tasks.src.movement import UpdatePoseState, UpdatePoseToObjectState, HoldPositionTask,Rotate90DegreesState
 
 
@@ -29,9 +30,8 @@ class TestReachDestinationMachine(smach.StateMachine):
     def __init__(self):
         smach.StateMachine.__init__(self, outcomes=['success', 'failure'])
         with self:
-            smach.StateMachine.add('move', UpdatePoseState( edge_case_callback= lambda x: False, next_state_callback = None, pose= Pose(position=Point(x=1,y=1,z=1))),
-                                                             speed= 1.0, heading_offset= 0.1, fixed_heading= False, radius_of_acceptance = 0.5), 
-                                   transitions={'success':'success', 'aborted':'failure', 'edge_case_detected':'failure'})
+            smach.StateMachine.add('move', UpdatePoseState( edge_case_callback= lambda x: False, next_state_callback = None, pose= Pose(position=Point(x=5,y=5,z=-20)),
+                                                             speed= 2.0, heading_offset= 0.1, fixed_heading= False, radius_of_acceptance = 0.5), transitions={'success':'success', 'aborted':'failure', 'edge_case_detected':'failure'} )
 
 
 class TestRotationMachine(smach.StateMachine):
@@ -45,40 +45,38 @@ class TestRotationMachine(smach.StateMachine):
 ##########################################################
 
 
-class TestMovementsinStateMachine(unittest.TestCase):
+class Movement_Behaviours(unittest.TestCase):
 
     def setUp(self):
-        rospy.init_node('your_state_machine_node')
+        rospy.init_node('your_state_machine_node', anonymous=True)
         file_path = os.path.join(os.path.dirname(__file__), 'test_data/test_topics.yml')
         initialize_subscribers(file_path)
 
+        # Wait some time for the Simulation to start. This will be hardware dependant.
+        rospy.sleep(10)
 
-
-    def controls_movement_simulation(self):
-        #  This should test wheter it makes a substational movement to see wheter 
-        #  The movement command from the controls systems works acoordingly.
-        self.state.execute()
-        self.assertTrue(True)
-        sm = YourStateMachine()
-        outcome = sm.execute()
-
-
-    def reach_to_destination(self):
+    def test_reach_to_destination(self):
         #  This test check if the internal loop inside the Movement statemachine
         #  works correctly and stops when as reach its destination.
 
         sm = TestReachDestinationMachine()
         outcome = sm.execute()
+        rospy.loginfo("BROOOOO!")
 
         self.assertEqual(outcome,'success')
 
 
 
 
+    def tearDown(self):
+        # Clean up code here
+        pass
+
+
+
+
+
 if __name__ == '__main__':
-    state = UpdatePoseState( edge_case_callback= lambda x: False, next_state_callback = None)
-    random_waypoints = state.generate_waypoints(1)
-    waypoint_1 = random_waypoints[0]
-    state.execute()
-    # unittest.main()
+    import rostest
+    rostest.rosrun('tasks', 'test_movement_behaviours', Movement_Behaviours)
 

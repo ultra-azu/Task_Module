@@ -1,5 +1,5 @@
 <launch>
 
     <node name="rosbag_play" pkg="rosbag" type="play" args="-l $(find tasks)/test/test_data/zed_camera.bag" />
-    <test test-name="test_camera_behaviours" pkg="tasks" type="test_camera.py" />
+    <test test-name="test_camera_behaviours" pkg="tasks" type="camera_test.py" />
 </launch>
