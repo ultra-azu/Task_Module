@@ -22,6 +22,7 @@ RUN chmod +x /opencv.sh
 RUN /opencv.sh
 
 ADD ./tensorrt_inference.sh /tensorrt_inference.sh
+ADD ./0001-Use-yaml-cpp-cmake-package.patch /0001-Use-yaml-cpp-cmake-package.patch
 RUN chmod +x /tensorrt_inference.sh
 RUN /tensorrt_inference.sh
 

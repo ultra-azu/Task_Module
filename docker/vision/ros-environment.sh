@@ -1,5 +1,5 @@
 #!/bin/bash
-set -e 
+set -e
 ROS_DISTRO="noetic"
 
 echo "source /opt/ros/$ROS_DISTRO/setup.bash" >> ~/.bashrc
@@ -12,9 +12,7 @@ source devel/setup.bash
 
 pushd src
 git clone --recursive https://github.com/Rumarino-Team/Vision-Zed-Ros-Wrapper.git
-cd Vision-Zed-Ros-Wrapper
-git am /0001-WIP-Add-missing-package-dependencies.patch
-popd 
+popd
 rosdep init
 rosdep update
 rosdep install --from-paths src --ignore-src -r -y
