@@ -1,4 +1,4 @@
-# Build arguments  
+# Build arguments
 ARG UBUNTU_RELEASE_YEAR=20
 ARG ZED_SDK_MAJOR=4
 ARG ZED_SDK_MINOR=0
@@ -10,7 +10,7 @@ FROM stereolabs/zed:${ZED_SDK_MAJOR}.${ZED_SDK_MINOR}-devel-cuda${CUDA_MAJOR}.${
 # Print Ubuntu version
 RUN apt-get update && apt-get install -y lsb-release
 
-# OpenCV Version 
+# OpenCV Version
 ARG OPENCV_VERSION=4.x
 
 ADD ./dependencies.sh /dependencies.sh
@@ -32,4 +32,4 @@ RUN /ros-environment.sh
 
 WORKDIR /
 
- CMD ["bash"]
+CMD ["bash"]
